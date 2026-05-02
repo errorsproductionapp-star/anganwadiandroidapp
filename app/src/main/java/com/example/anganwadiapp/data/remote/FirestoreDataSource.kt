@@ -3,11 +3,14 @@ package com.example.anganwadiapp.data.remote
 import com.example.anganwadiapp.data.remote.dto.ChildDto
 import com.example.anganwadiapp.data.remote.dto.StaffDto
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import java.text.SimpleDateFormat
+import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -113,6 +116,144 @@ class FirestoreDataSource @Inject constructor(
         childrenCollection.document(id).delete().await()
     }
 
+    fun getChildrenByCenterFlow(centerId: String): Flow<List<ChildDto>> = callbackFlow {
+        val listener = firestore.collection(centerId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                val children = snapshot?.documents?.filter { doc ->
+                    !doc.id.startsWith("students") && !doc.id.startsWith("attendance") && !doc.id.startsWith("student_attendance")
+                }?.mapNotNull { doc ->
+                    doc.toChildDto()
+                } ?: emptyList()
+                trySend(children)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    suspend fun saveStudentAttendance(
+        centerId: String,
+        date: String,
+        totalStudents: Int,
+        totalPresent: Int,
+        totalAbsent: Int,
+        markedBy: String,
+        presentStudents: List<Map<String, Any>>,
+        absentStudents: List<Map<String, Any>>
+    ) {
+        firestore.collection(centerId)
+            .document("student_attendance")
+            .collection(date)
+            .document("attendance_data")
+            .set(
+                mapOf(
+                    "date" to date,
+                    "totalStudents" to totalStudents,
+                    "totalPresent" to totalPresent,
+                    "totalAbsent" to totalAbsent,
+                    "markedBy" to markedBy,
+                    "presentStudents" to presentStudents,
+                    "absentStudents" to absentStudents,
+                    "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                )
+            )
+            .await()
+    }
+
+    suspend fun getTodayAttendance(centerId: String, date: String): Map<String, Any>? {
+        val doc = firestore.collection(centerId)
+            .document("student_attendance")
+            .collection(date)
+            .document("attendance_data")
+            .get()
+            .await()
+        return if (doc.exists()) doc.data else null
+    }
+
+    private fun DocumentSnapshot.toChildDto(): ChildDto {
+        val dobValue = get("dateOfBirth")
+        val admissionValue = get("admissionDate")
+
+        val dateOfBirth = when (dobValue) {
+            is Long -> formatTimestamp(dobValue)
+            is String -> dobValue
+            else -> ""
+        }
+
+        val admissionDate = when (admissionValue) {
+            is Long -> formatTimestamp(admissionValue)
+            is String -> admissionValue
+            else -> ""
+        }
+
+        return ChildDto(
+            id = id,
+            name = getString("name") ?: "",
+            dateOfBirth = dateOfBirth,
+            admissionDate = admissionDate,
+            age = getString("age") ?: "",
+            gender = getString("gender") ?: "OTHER",
+            fatherName = getString("fatherName") ?: "",
+            motherName = getString("motherName") ?: "",
+            fatherMobile = getString("fatherMobile") ?: "",
+            motherMobile = getString("motherMobile") ?: "",
+            placeOfBirth = getString("placeOfBirth") ?: "",
+            bloodGroup = getString("bloodGroup") ?: "",
+            physicallyChallenged = getBoolean("physicallyChallenged") ?: false,
+            height = getDouble("height")?.toFloat(),
+            weight = getDouble("weight")?.toFloat(),
+            allergies = getString("allergies") ?: "",
+            healthNotes = getString("healthNotes") ?: "",
+            anganwadiCenterId = getString("anganwadiCenterId") ?: "",
+            photoUrl = getString("photoUrl")
+        )
+    }
+
+    private fun DocumentSnapshot.getBoolean(field: String): Boolean? {
+        val value = get(field)
+        return when (value) {
+            is Boolean -> value
+            is Long -> value != 0L
+            is Int -> value != 0
+            else -> null
+        }
+    }
+
+    private fun DocumentSnapshot.getDouble(field: String): Double? {
+        val value = get(field)
+        return when (value) {
+            is Double -> value
+            is Long -> value.toDouble()
+            is Int -> value.toDouble()
+            is Float -> value.toDouble()
+            else -> null
+        }
+    }
+
+    suspend fun updateChildEnrollment(child: ChildDto) {
+        val uid = auth.currentUser?.uid
+            ?: throw IllegalStateException("User not authenticated")
+
+        val anganwadiCenterId = getAnganwadiCenterId(uid)
+            ?: throw IllegalStateException("Anganwadi center ID not found for user")
+
+        val childData = child.copy(anganwadiCenterId = anganwadiCenterId)
+        firestore.collection(anganwadiCenterId).document(child.id).set(childData).await()
+    }
+
+    suspend fun deleteChildEnrollment(childId: String) {
+        val uid = auth.currentUser?.uid
+            ?: throw IllegalStateException("User not authenticated")
+
+        val anganwadiCenterId = getAnganwadiCenterId(uid)
+            ?: throw IllegalStateException("Anganwadi center ID not found for user")
+
+        firestore.collection(anganwadiCenterId).document(childId).delete().await()
+    }
+
     // Enrollment Methods
     suspend fun saveChildEnrollment(child: ChildDto): String {
         val uid = auth.currentUser?.uid
@@ -146,5 +287,9 @@ class FirestoreDataSource @Inject constructor(
 
     private fun generateRandom10DigitId(): String {
         return (1_000_000_000L..9_999_999_999L).random().toString()
+    }
+
+    private fun formatTimestamp(millis: Long): String {
+        return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(java.util.Date(millis))
     }
 }

@@ -5,6 +5,7 @@ import com.example.anganwadiapp.data.remote.FirestoreDataSource
 import com.example.anganwadiapp.data.remote.dto.toDomain
 import com.example.anganwadiapp.data.remote.dto.toDto
 import com.example.anganwadiapp.domain.model.Child
+import com.example.anganwadiapp.domain.model.Staff
 import com.example.anganwadiapp.domain.repository.AppRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -21,6 +22,12 @@ class AppRepositoryImpl @Inject constructor(
         return firestoreDataSource.getChildrenFlow()
             .map { dtos -> Result.Success(dtos.map { it.toDomain() }) as Result<List<Child>> }
             .catch { e -> emit(Result.Error(e.message ?: "Failed to fetch children", e)) }
+    }
+
+    override fun getChildrenByCenter(centerId: String): Flow<Result<List<Child>>> {
+        return firestoreDataSource.getChildrenByCenterFlow(centerId)
+            .map { dtos -> Result.Success(dtos.map { it.toDomain() }) as Result<List<Child>> }
+            .catch { e -> emit(Result.Error(e.message ?: "Failed to fetch children by center", e)) }
     }
 
     override suspend fun addChild(child: Child): Result<Unit> {
@@ -54,5 +61,52 @@ class AppRepositoryImpl @Inject constructor(
         return firestoreDataSource.getChildByIdFlow(id)
             .map { dto -> Result.Success(dto?.toDomain()) as Result<Child?> }
             .catch { e -> emit(Result.Error(e.message ?: "Failed to fetch child", e)) }
+    }
+
+    override suspend fun getAnganwadiCenterId(uid: String): String? {
+        return firestoreDataSource.getAnganwadiCenterId(uid)
+    }
+
+    override suspend fun getStaffByUid(uid: String): Result<Staff> {
+        return try {
+            val staff = firestoreDataSource.getStaffByUid(uid)
+            if (staff != null) {
+                Result.Success(staff.toDomain())
+            } else {
+                Result.Error("Staff not found")
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to fetch staff", e)
+        }
+    }
+
+    override suspend fun saveStudentAttendance(
+        centerId: String,
+        date: String,
+        totalStudents: Int,
+        totalPresent: Int,
+        totalAbsent: Int,
+        markedBy: String,
+        presentStudents: List<Map<String, Any>>,
+        absentStudents: List<Map<String, Any>>
+    ): Result<Unit> {
+        return try {
+            firestoreDataSource.saveStudentAttendance(
+                centerId, date, totalStudents, totalPresent, totalAbsent,
+                markedBy, presentStudents, absentStudents
+            )
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to save attendance", e)
+        }
+    }
+
+    override suspend fun getTodayAttendance(centerId: String, date: String): Result<Map<String, Any>?> {
+        return try {
+            val data = firestoreDataSource.getTodayAttendance(centerId, date)
+            Result.Success(data)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to fetch attendance", e)
+        }
     }
 }

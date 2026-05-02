@@ -24,11 +24,8 @@ object AppModule {
 //        return FirebaseFirestore.getInstance()
 //    }
 
-    @Provides
-    @Singleton
-    fun provideAppRepository(dataSource: FirestoreDataSource): AppRepository {
-        return AppRepositoryImpl(dataSource)
-    }
+//
+
 
     @Provides
     @Singleton
