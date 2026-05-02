@@ -19,7 +19,7 @@ class StaffRepositoryImpl @Inject constructor(
 
     override suspend fun registerStaff(staff: Staff, password: String): Result<Unit> {
         return try {
-            firestoreDataSource.registerStaff(staff.toDto())
+            firestoreDataSource.registerStaffWithAuth(staff.email, password, staff.toDto())
             Result.Success(Unit)
         } catch (e: Exception) {
             Result.Error(e.message ?: "Registration failed", e)
@@ -28,7 +28,10 @@ class StaffRepositoryImpl @Inject constructor(
 
     override suspend fun loginStaff(email: String, password: String): Result<Staff> {
         return try {
-            val staffDto = firestoreDataSource.getStaffByEmail(email)
+            firestoreDataSource.loginStaffWithAuth(email, password)
+            val currentUid = firestoreDataSource.getCurrentUid()
+                ?: return Result.Error("Authentication failed")
+            val staffDto = firestoreDataSource.getStaffByUid(currentUid)
             if (staffDto != null) {
                 // Capture current date and time for attendance
                 val now = Calendar.getInstance().time

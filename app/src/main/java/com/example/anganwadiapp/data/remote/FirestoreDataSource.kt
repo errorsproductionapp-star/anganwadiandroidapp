@@ -2,6 +2,7 @@ package com.example.anganwadiapp.data.remote
 
 import com.example.anganwadiapp.data.remote.dto.ChildDto
 import com.example.anganwadiapp.data.remote.dto.StaffDto
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -12,21 +13,46 @@ import javax.inject.Singleton
 
 @Singleton
 class FirestoreDataSource @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val auth: FirebaseAuth
 ) {
     private val childrenCollection = firestore.collection("children")
     private val staffCollection = firestore.collection("staff")
 
     // Staff Methods
-    suspend fun registerStaff(staff: StaffDto) {
-        val docRef = if (staff.id.isEmpty()) staffCollection.document() else staffCollection.document(staff.id)
-        val staffWithId = if (staff.id.isEmpty()) staff.copy(id = docRef.id) else staff
-        docRef.set(staffWithId).await()
+    suspend fun registerStaffWithAuth(email: String, password: String, staff: StaffDto): String {
+        val authResult = auth.createUserWithEmailAndPassword(email, password).await()
+        val uid = authResult.user?.uid ?: throw IllegalStateException("Failed to get UID")
+        val staffWithId = staff.copy(id = uid)
+        staffCollection
+            .document(staff.anganwadiCenterId)
+            .collection("users")
+            .document(uid)
+            .set(staffWithId)
+            .await()
+        firestore.collection("user_centers").document(uid)
+            .set(mapOf("anganwadiCenterId" to staff.anganwadiCenterId))
+            .await()
+        return uid
     }
 
-    suspend fun getStaffByEmail(email: String): StaffDto? {
-        val query = staffCollection.whereEqualTo("email", email).get().await()
-        return query.documents.firstOrNull()?.toObject(StaffDto::class.java)
+    suspend fun loginStaffWithAuth(email: String, password: String) {
+        auth.signInWithEmailAndPassword(email, password).await()
+    }
+
+    fun getCurrentUid(): String? = auth.currentUser?.uid
+
+    suspend fun getStaffByUid(uid: String): StaffDto? {
+        val centerDoc = firestore.collection("user_centers").document(uid).get().await()
+        val centerId = centerDoc.getString("anganwadiCenterId")
+        if (centerId == null) return null
+        val userDoc = staffCollection
+            .document(centerId)
+            .collection("users")
+            .document(uid)
+            .get()
+            .await()
+        return userDoc.toObject(StaffDto::class.java)?.copy(id = uid)
     }
 
     suspend fun logStaffAttendance(centerId: String, staffName: String, date: String, loginTime: String) {

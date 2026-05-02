@@ -9,7 +9,7 @@ data class StaffDto(
     val name: String = "",
     val mobileNumber: String = "",
     val email: String = "",
-    val username: String = "",
+    //val username: String = "",
     val anganwadiCenterId: String = ""
 )
 
