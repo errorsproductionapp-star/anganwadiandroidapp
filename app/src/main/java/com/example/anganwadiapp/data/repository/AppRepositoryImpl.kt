@@ -2,6 +2,7 @@ package com.example.anganwadiapp.data.repository
 
 import com.example.anganwadiapp.core.common.Result
 import com.example.anganwadiapp.data.remote.FirestoreDataSource
+import com.example.anganwadiapp.data.remote.dto.DietPlanDto
 import com.example.anganwadiapp.data.remote.dto.toDomain
 import com.example.anganwadiapp.data.remote.dto.toDto
 import com.example.anganwadiapp.domain.model.Child
@@ -107,6 +108,81 @@ class AppRepositoryImpl @Inject constructor(
             Result.Success(data)
         } catch (e: Exception) {
             Result.Error(e.message ?: "Failed to fetch attendance", e)
+        }
+    }
+
+    override suspend fun saveDietPlan(centerId: String, date: String, dietPlan: Map<String, Any>): Result<Unit> {
+        return try {
+            val dto = DietPlanDto(
+                date = date,
+                breakfastItems = dietPlan["breakfastItems"] as? List<String> ?: emptyList(),
+                breakfastCalories = dietPlan["breakfastCalories"] as? String ?: "",
+                breakfastProteins = dietPlan["breakfastProteins"] as? String ?: "",
+                breakfastCarbohydrates = dietPlan["breakfastCarbohydrates"] as? String ?: "",
+                breakfastFats = dietPlan["breakfastFats"] as? String ?: "",
+                breakfastVitamins = dietPlan["breakfastVitamins"] as? String ?: "",
+                breakfastMinerals = dietPlan["breakfastMinerals"] as? String ?: "",
+                breakfastCompliance = dietPlan["breakfastCompliance"] as? String,
+                midDayItems = dietPlan["midDayItems"] as? List<String> ?: emptyList(),
+                midDayCalories = dietPlan["midDayCalories"] as? String ?: "",
+                midDayProteins = dietPlan["midDayProteins"] as? String ?: "",
+                midDayCarbohydrates = dietPlan["midDayCarbohydrates"] as? String ?: "",
+                midDayFats = dietPlan["midDayFats"] as? String ?: "",
+                midDayVitamins = dietPlan["midDayVitamins"] as? String ?: "",
+                midDayMinerals = dietPlan["midDayMinerals"] as? String ?: "",
+                midDayCompliance = dietPlan["midDayCompliance"] as? String,
+                snackItems = dietPlan["snackItems"] as? List<String> ?: emptyList(),
+                snackCalories = dietPlan["snackCalories"] as? String ?: "",
+                snackProteins = dietPlan["snackProteins"] as? String ?: "",
+                snackCarbohydrates = dietPlan["snackCarbohydrates"] as? String ?: "",
+                snackFats = dietPlan["snackFats"] as? String ?: "",
+                snackVitamins = dietPlan["snackVitamins"] as? String ?: "",
+                snackMinerals = dietPlan["snackMinerals"] as? String ?: "",
+                snackCompliance = dietPlan["snackCompliance"] as? String
+            )
+            firestoreDataSource.saveDietPlan(centerId, date, dto)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to save diet plan", e)
+        }
+    }
+
+    override suspend fun getDietPlan(centerId: String, date: String): Result<Map<String, Any>?> {
+        return try {
+            val dto = firestoreDataSource.getDietPlan(centerId, date)
+            if (dto != null) {
+                val map = mutableMapOf<String, Any>()
+                map["date"] = dto.date
+                map["breakfastItems"] = dto.breakfastItems
+                map["breakfastCalories"] = dto.breakfastCalories
+                map["breakfastProteins"] = dto.breakfastProteins
+                map["breakfastCarbohydrates"] = dto.breakfastCarbohydrates
+                map["breakfastFats"] = dto.breakfastFats
+                map["breakfastVitamins"] = dto.breakfastVitamins
+                map["breakfastMinerals"] = dto.breakfastMinerals
+                dto.breakfastCompliance?.let { map["breakfastCompliance"] = it }
+                map["midDayItems"] = dto.midDayItems
+                map["midDayCalories"] = dto.midDayCalories
+                map["midDayProteins"] = dto.midDayProteins
+                map["midDayCarbohydrates"] = dto.midDayCarbohydrates
+                map["midDayFats"] = dto.midDayFats
+                map["midDayVitamins"] = dto.midDayVitamins
+                map["midDayMinerals"] = dto.midDayMinerals
+                dto.midDayCompliance?.let { map["midDayCompliance"] = it }
+                map["snackItems"] = dto.snackItems
+                map["snackCalories"] = dto.snackCalories
+                map["snackProteins"] = dto.snackProteins
+                map["snackCarbohydrates"] = dto.snackCarbohydrates
+                map["snackFats"] = dto.snackFats
+                map["snackVitamins"] = dto.snackVitamins
+                map["snackMinerals"] = dto.snackMinerals
+                dto.snackCompliance?.let { map["snackCompliance"] = it }
+                Result.Success(map)
+            } else {
+                Result.Success(null)
+            }
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to fetch diet plan", e)
         }
     }
 }

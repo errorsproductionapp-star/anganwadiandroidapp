@@ -1,6 +1,7 @@
 package com.example.anganwadiapp.data.remote
 
 import com.example.anganwadiapp.data.remote.dto.ChildDto
+import com.example.anganwadiapp.data.remote.dto.DietPlanDto
 import com.example.anganwadiapp.data.remote.dto.StaffDto
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
@@ -291,5 +292,25 @@ class FirestoreDataSource @Inject constructor(
 
     private fun formatTimestamp(millis: Long): String {
         return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(java.util.Date(millis))
+    }
+
+    // Diet Plan Methods
+    suspend fun saveDietPlan(anganwadiCenterId: String, date: String, dietPlan: DietPlanDto) {
+        firestore.collection(anganwadiCenterId)
+            .document("diet_plan")
+            .collection(date)
+            .document("day_log")
+            .set(dietPlan)
+            .await()
+    }
+
+    suspend fun getDietPlan(anganwadiCenterId: String, date: String): DietPlanDto? {
+        val doc = firestore.collection(anganwadiCenterId)
+            .document("diet_plan")
+            .collection(date)
+            .document("day_log")
+            .get()
+            .await()
+        return if (doc.exists()) doc.toObject(DietPlanDto::class.java) else null
     }
 }

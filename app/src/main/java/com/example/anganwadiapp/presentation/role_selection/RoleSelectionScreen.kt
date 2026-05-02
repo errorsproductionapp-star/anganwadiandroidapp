@@ -1,6 +1,8 @@
 package com.example.anganwadiapp.presentation.role_selection
 
-import androidx.compose.foundation.Image
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,24 +11,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.CloudDone
-import androidx.compose.material.icons.filled.FamilyRestroom
-import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+// Modern SaaS Color Palette
+val PrimaryBlue = Color(0xFF2563EB)
+val BgLight = Color(0xFFF8FAFC)
+val SuccessGreen = Color(0xFF10B981)
+val TextDark = Color(0xFF1E293B)
+val TextGray = Color(0xFF64748B)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,36 +40,33 @@ fun RoleSelectionScreen(onContinue: (String) -> Unit) {
     var selectedRole by remember { mutableStateOf("") }
 
     Scaffold(
+        containerColor = BgLight,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            shape = CircleShape,
-                            modifier = Modifier.size(32.dp),
-                            color = Color(0xFF0056D2)
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(
+                                    brush = Brush.linearGradient(listOf(PrimaryBlue, Color(0xFF60A5FA))),
+                                    shape = RoundedCornerShape(8.dp)
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            // Placeholder for user avatar if needed
+                            Icon(Icons.Default.CloudDone, "", tint = Color.White, modifier = Modifier.size(18.dp))
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Anganwadi Connect",
+                            "Anganwadi Connect",
                             fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF0056D2)
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = (-0.5).sp,
+                            color = TextDark
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Icon(
-                            imageVector = Icons.Default.CloudDone,
-                            contentDescription = "Status",
-                            tint = Color(0xFF0056D2)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
             )
         }
     ) { innerPadding ->
@@ -71,32 +74,24 @@ fun RoleSelectionScreen(onContinue: (String) -> Unit) {
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize()
-                .background(Color.White)
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
-            
+            Spacer(modifier = Modifier.height(20.dp))
+
             Text(
-                text = "Welcome",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
+                text = "Welcome back",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Black,
+                color = TextDark
             )
-            
+
             Text(
-                text = "Please select your role to continue",
+                text = "Choose your workspace to get started",
                 fontSize = 16.sp,
-                color = Color.Gray,
+                color = TextGray,
                 modifier = Modifier.padding(top = 8.dp)
-            )
-            
-            Text(
-                text = "தொடர உங்கள் பாத்திரத்தைத் தேர்ந்தெடுக்கவும்",
-                fontSize = 14.sp,
-                color = Color(0xFF4CAF50),
-                modifier = Modifier.padding(top = 4.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -104,10 +99,8 @@ fun RoleSelectionScreen(onContinue: (String) -> Unit) {
             RoleCard(
                 title = "Anganwadi Staff",
                 description = "Manage student attendance, health records, and nutrition data.",
-                tamilDescription = "மாணவர் வருகை மற்றும் ஆரோக்கியத்தைப் நிர்வகிக்கவும்",
+                tamilDescription = "வருகை மற்றும் ஆரோக்கியத்தை நிர்வகிக்க",
                 icon = Icons.Default.School,
-                iconContainerColor = Color(0xFFE8F0FE),
-                iconColor = Color(0xFF1967D2),
                 isSelected = selectedRole == "Staff",
                 onClick = { selectedRole = "Staff" }
             )
@@ -117,56 +110,56 @@ fun RoleSelectionScreen(onContinue: (String) -> Unit) {
             RoleCard(
                 title = "Parent / Guardian",
                 description = "Track your child's growth, attendance, and learning progress.",
-                tamilDescription = "உங்கள் குழந்தையின் வளர்ச்சி மற்றும் முன்னேற்றத்தைக் கண்காணிக்கவும்",
+                tamilDescription = "குழந்தையின் முன்னேற்றத்தைக் கண்காணிக்க",
                 icon = Icons.Default.FamilyRestroom,
-                iconContainerColor = Color(0xFFE8F5E9),
-                iconColor = Color(0xFF2E7D32),
                 isSelected = selectedRole == "Parent",
                 onClick = { selectedRole = "Parent" }
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
-            // Placeholder for the illustration
-            Surface(
+            // Premium SaaS style illustration area
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-                color = Color(0xFFF0F4F8)
+                    .height(160.dp)
+                    .background(Color.White, RoundedCornerShape(24.dp))
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(text = "Illustration Placeholder", color = Color.LightGray)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = BgLight, modifier = Modifier.size(48.dp))
+                    Text("Secure Cloud Sync Enabled", color = Color.LightGray, fontSize = 12.sp)
                 }
             }
 
             Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = { if (selectedRole.isNotEmpty()) onContinue(selectedRole) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0056D2)),
-                enabled = selectedRole.isNotEmpty()
+                    .height(60.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryBlue,
+                    disabledContainerColor = Color(0xFFCBD5E1)
+                ),
+                enabled = selectedRole.isNotEmpty(),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "Continue", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Icon(imageVector = Icons.Default.ArrowForward, contentDescription = null)
-                }
+                Text("Continue to Dashboard", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(Icons.Default.ArrowForward, null, modifier = Modifier.size(20.dp))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
             Text(
-                text = "By continuing, you agree to our Terms and Privacy Policy.",
-                fontSize = 12.sp,
-                color = Color.Gray,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(bottom = 24.dp)
+                text = "Secure Infrastructure • Privacy Protected",
+                fontSize = 11.sp,
+                color = TextGray,
+                modifier = Modifier.padding(vertical = 24.dp),
+                letterSpacing = 1.sp
             )
         }
     }
@@ -178,76 +171,62 @@ fun RoleCard(
     description: String,
     tamilDescription: String,
     icon: ImageVector,
-    iconContainerColor: Color,
-    iconColor: Color,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val scale by animateFloatAsState(if (isSelected) 1.02f else 1f)
+    val borderColor by animateColorAsState(if (isSelected) PrimaryBlue else Color.Transparent)
+    val containerColor by animateColorAsState(if (isSelected) Color.White else Color.White.copy(alpha = 0.7f))
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .scale(scale)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        border = if (isSelected) androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF0056D2)) else androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFE0E0E0)),
-        shadowElevation = 2.dp
+        shape = RoundedCornerShape(20.dp),
+        color = containerColor,
+        border = BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) PrimaryBlue else Color(0xFFE2E8F0)),
+        shadowElevation = if (isSelected) 12.dp else 1.dp
     ) {
         Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(
-                shape = CircleShape,
-                color = iconContainerColor,
-                modifier = Modifier.size(56.dp)
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .background(
+                        if (isSelected) PrimaryBlue.copy(alpha = 0.1f) else BgLight,
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = iconColor,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
+                Icon(
+                    icon, null,
+                    tint = if (isSelected) PrimaryBlue else TextGray,
+                    modifier = Modifier.size(24.dp)
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
             Column(modifier = Modifier.weight(1f)) {
+                Text(title, fontWeight = FontWeight.Bold, color = TextDark, fontSize = 17.sp)
+                Text(description, fontSize = 13.sp, color = TextGray, lineHeight = 18.sp)
                 Text(
-                    text = title,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                Text(
-                    text = description,
-                    fontSize = 13.sp,
-                    color = Color.Gray,
-                    lineHeight = 18.sp
-                )
-                Text(
-                    text = tamilDescription,
+                    tamilDescription,
                     fontSize = 12.sp,
-                    color = Color(0xFF4CAF50),
+                    color = SuccessGreen,
+                    fontWeight = FontWeight.Medium,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
 
-            Icon(
-                imageVector = Icons.Default.ArrowForwardIos,
-                contentDescription = null,
-                tint = Color.LightGray,
-                modifier = Modifier.size(16.dp)
-            )
+            if (isSelected) {
+                Icon(Icons.Default.CheckCircle, null, tint = PrimaryBlue, modifier = Modifier.size(24.dp))
+            } else {
+                Icon(Icons.Default.RadioButtonUnchecked, null, tint = Color(0xFFCBD5E1), modifier = Modifier.size(24.dp))
+            }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun RoleSelectionScreenPreview() {
-    RoleSelectionScreen(onContinue = {})
 }
