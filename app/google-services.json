@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "475920002268",
+    "project_id": "anganwadiandroidapp",
+    "storage_bucket": "anganwadiandroidapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:475920002268:android:03d979d2b457363f5dd819",
+        "android_client_info": {
+          "package_name": "com.example.anganwadi_android_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-JmXkZiRWz7pywJX3x2BvpMTf_Ndf8Bg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:475920002268:android:164b64453957b9525dd819",
+        "android_client_info": {
+          "package_name": "com.example.anganwadiapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB-JmXkZiRWz7pywJX3x2BvpMTf_Ndf8Bg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
