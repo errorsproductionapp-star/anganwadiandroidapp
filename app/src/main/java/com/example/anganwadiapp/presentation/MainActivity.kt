@@ -5,8 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import com.example.anganwadiapp.presentation.auth.staff.StaffAuthScreen
+import com.example.anganwadiapp.presentation.auth.staff.StaffLoginScreen
+import com.example.anganwadiapp.presentation.auth.staff.StaffRegistrationScreen
 import com.example.anganwadiapp.presentation.main.MainScreen
 import com.example.anganwadiapp.presentation.role_selection.RoleSelectionScreen
 import com.example.anganwadiapp.presentation.splash.SplashScreen
@@ -30,8 +31,31 @@ class MainActivity : ComponentActivity() {
                     }
                     "role_selection" -> {
                         RoleSelectionScreen(onContinue = { role ->
-                            currentScreen = "main"
+                            if (role == "Staff") {
+                                currentScreen = "staff_auth"
+                            } else {
+                                currentScreen = "main"
+                            }
                         })
+                    }
+                    "staff_auth" -> {
+                        StaffAuthScreen(
+                            onLoginClick = { currentScreen = "staff_login" },
+                            onRegisterClick = { currentScreen = "staff_registration" },
+                            onBack = { currentScreen = "role_selection" }
+                        )
+                    }
+                    "staff_login" -> {
+                        StaffLoginScreen(
+                            onLoginSuccess = { currentScreen = "main" },
+                            onBack = { currentScreen = "staff_auth" }
+                        )
+                    }
+                    "staff_registration" -> {
+                        StaffRegistrationScreen(
+                            onRegisterSuccess = { currentScreen = "staff_login" },
+                            onBack = { currentScreen = "staff_auth" }
+                        )
                     }
                     "main" -> {
                         MainScreen()
