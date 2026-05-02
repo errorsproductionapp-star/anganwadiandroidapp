@@ -313,4 +313,20 @@ class FirestoreDataSource @Inject constructor(
             .await()
         return if (doc.exists()) doc.toObject(DietPlanDto::class.java) else null
     }
+
+    // Stock Management Methods
+    suspend fun saveStockItem(
+        anganwadiCenterId: String,
+        date: String,
+        stockType: String,
+        itemData: Map<String, Any>
+    ) {
+        firestore.collection(anganwadiCenterId)
+            .document("stocks")
+            .collection(stockType)
+            .document(date)
+            .collection("items")
+            .add(itemData)
+            .await()
+    }
 }

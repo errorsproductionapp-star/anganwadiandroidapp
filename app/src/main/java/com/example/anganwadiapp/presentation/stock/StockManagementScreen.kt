@@ -18,9 +18,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.anganwadiapp.presentation.components.AppTopBar
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 
 private val Sky50 = Color(0xFFF0F9FF)
 private val Sky100 = Color(0xFFE0F2FE)
@@ -48,14 +55,21 @@ enum class StockModule {
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StockManagementScreen() {
+fun StockManagementScreen(
+    viewModel: StockViewModel = hiltViewModel()
+) {
     var selectedModule by remember { mutableStateOf(StockModule.RECEIVED) }
+    val saveSuccess by viewModel.saveSuccess.collectAsStateWithLifecycle()
+    val errorMessage by viewModel.errorMessage.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Gray50)
     ) {
+        AppTopBar(title = "Stock Management")
+
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -67,9 +81,80 @@ fun StockManagementScreen() {
             Spacer(modifier = Modifier.height(8.dp))
 
             when (selectedModule) {
-                StockModule.RECEIVED -> ItemReceivedForm()
-                StockModule.UTILIZED -> ItemUtilizedForm()
+                StockModule.RECEIVED -> ItemReceivedForm(viewModel)
+                StockModule.UTILIZED -> ItemUtilizedForm(viewModel)
             }
+        }
+    }
+
+    if (errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.resetSaveState() },
+            title = { Text("Error", color = Gray900) },
+            text = { Text(errorMessage!!, color = Gray900) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.resetSaveState() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    if (saveSuccess) {
+        AlertDialog(
+            onDismissRequest = { viewModel.resetSaveState() },
+            title = { Text("Success", color = Gray900) },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    AnimatedCheckmark()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Item saved successfully!", color = Gray900)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.resetSaveState() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+}
+
+@Composable
+fun AnimatedCheckmark() {
+    val animationProgress by animateFloatAsState(
+        targetValue = 1f,
+        animationSpec = tween(durationMillis = 500),
+        label = "checkmark"
+    )
+
+    Canvas(modifier = Modifier.size(60.dp)) {
+        drawArc(
+            color = Green400,
+            startAngle = -90f,
+            sweepAngle = 360f * animationProgress,
+            useCenter = false,
+            style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round)
+        )
+
+        if (animationProgress > 0.5f) {
+            drawLine(
+                color = Green400,
+                start = center.copy(x = center.x - 15.dp.toPx(), y = center.y),
+                end = center.copy(x = center.x - 5.dp.toPx(), y = center.y + 10.dp.toPx()),
+                strokeWidth = 4.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = Green400,
+                start = center.copy(x = center.x - 5.dp.toPx(), y = center.y + 10.dp.toPx()),
+                end = center.copy(x = center.x + 15.dp.toPx(), y = center.y - 10.dp.toPx()),
+                strokeWidth = 4.dp.toPx(),
+                cap = StrokeCap.Round
+            )
         }
     }
 }
@@ -150,14 +235,27 @@ fun ModuleButton(
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItemReceivedForm() {
+fun ItemReceivedForm(viewModel: StockViewModel) {
     var itemName by remember { mutableStateOf("") }
-    var dateReceived by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))) }
+    var dateReceived by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))) }
     var quantity by remember { mutableStateOf("") }
     var selectedUnit by remember { mutableStateOf("kg") }
     var selectedSource by remember { mutableStateOf("Government supply") }
     var showDatePicker by remember { mutableStateOf(false) }
     var showSourceDropdown by remember { mutableStateOf(false) }
+
+    val clearFields by viewModel.clearFields.collectAsStateWithLifecycle()
+
+    LaunchedEffect(clearFields) {
+        if (clearFields) {
+            itemName = ""
+            quantity = ""
+            selectedUnit = "kg"
+            selectedSource = "Government supply"
+            dateReceived = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+            viewModel.clearFieldsHandled()
+        }
+    }
 
     val units = listOf("kg", "litres", "pieces")
     val sources = listOf("Government supply", "NGO", "Donation")
@@ -185,20 +283,32 @@ fun ItemReceivedForm() {
                     OutlinedTextField(
                         value = itemName,
                         onValueChange = { itemName = it },
-                        label = { Text("Item Name") },
-                        leadingIcon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
+                        label = { Text("Item Name", color = Gray900) },
+                        leadingIcon = { Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = Gray900) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Gray900,
+                            unfocusedTextColor = Gray900,
+                            focusedLabelColor = Gray900,
+                            unfocusedLabelColor = Gray500
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     OutlinedTextField(
                         value = dateReceived,
                         onValueChange = { dateReceived = it },
-                        label = { Text("Date Received") },
-                        leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                        label = { Text("Date Received", color = Gray900) },
+                        leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null, tint = Gray900) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Gray900,
+                            unfocusedTextColor = Gray900,
+                            focusedLabelColor = Gray900,
+                            unfocusedLabelColor = Gray500
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                         readOnly = true,
                         trailingIcon = {
@@ -215,11 +325,17 @@ fun ItemReceivedForm() {
                         OutlinedTextField(
                             value = quantity,
                             onValueChange = { quantity = it },
-                            label = { Text("Quantity") },
-                            leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) },
+                            label = { Text("Quantity", color = Gray900) },
+                            leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null, tint = Gray900) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Gray900,
+                                unfocusedTextColor = Gray900,
+                                focusedLabelColor = Gray900,
+                                unfocusedLabelColor = Gray500
+                            ),
                             modifier = Modifier.weight(1f)
                         )
 
@@ -232,10 +348,16 @@ fun ItemReceivedForm() {
                                 OutlinedTextField(
                                     value = selectedUnit,
                                     onValueChange = {},
-                                    label = { Text("Unit") },
+                                    label = { Text("Unit", color = Gray900) },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                                     readOnly = true,
                                     shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Gray900,
+                                        unfocusedTextColor = Gray900,
+                                        focusedLabelColor = Gray900,
+                                        unfocusedLabelColor = Gray500
+                                    ),
                                     modifier = Modifier.menuAnchor()
                                 )
                                 ExposedDropdownMenu(
@@ -264,11 +386,17 @@ fun ItemReceivedForm() {
                             OutlinedTextField(
                                 value = selectedSource,
                                 onValueChange = {},
-                                label = { Text("Source / Supplier") },
-                                leadingIcon = { Icon(Icons.Default.Business, contentDescription = null) },
+                                label = { Text("Source / Supplier", color = Gray900) },
+                                leadingIcon = { Icon(Icons.Default.Business, contentDescription = null, tint = Gray900) },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showSourceDropdown) },
                                 readOnly = true,
                                 shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Gray900,
+                                    unfocusedTextColor = Gray900,
+                                    focusedLabelColor = Gray900,
+                                    unfocusedLabelColor = Gray500
+                                ),
                                 modifier = Modifier.menuAnchor().fillMaxWidth()
                             )
                             ExposedDropdownMenu(
@@ -293,7 +421,17 @@ fun ItemReceivedForm() {
 
         item {
             Button(
-                onClick = { },
+                onClick = {
+                    if (itemName.isNotBlank() && quantity.isNotBlank()) {
+                        viewModel.saveReceivedItem(
+                            itemName = itemName,
+                            date = dateReceived,
+                            quantity = quantity,
+                            unit = selectedUnit,
+                            source = selectedSource
+                        )
+                    }
+                },
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Green400),
                 modifier = Modifier.fillMaxWidth().height(52.dp)
@@ -313,7 +451,7 @@ fun ItemReceivedForm() {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
                         val date = LocalDate.ofEpochDay(millis / (24 * 60 * 60 * 1000))
-                        dateReceived = date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                        dateReceived = date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
                     }
                     showDatePicker = false
                 }) {
@@ -334,14 +472,28 @@ fun ItemReceivedForm() {
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItemUtilizedForm() {
+fun ItemUtilizedForm(viewModel: StockViewModel) {
     var itemName by remember { mutableStateOf("") }
-    var dateUsed by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))) }
+    var dateUsed by remember { mutableStateOf(LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))) }
     var quantity by remember { mutableStateOf("") }
     var selectedUnit by remember { mutableStateOf("kg") }
     var selectedPurpose by remember { mutableStateOf("Meal Preparation") }
     var usedBy by remember { mutableStateOf("") }
     var showDatePicker by remember { mutableStateOf(false) }
+
+    val clearFields by viewModel.clearFields.collectAsStateWithLifecycle()
+
+    LaunchedEffect(clearFields) {
+        if (clearFields) {
+            itemName = ""
+            quantity = ""
+            selectedUnit = "kg"
+            selectedPurpose = "Meal Preparation"
+            usedBy = ""
+            dateUsed = LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+            viewModel.clearFieldsHandled()
+        }
+    }
 
     val units = listOf("kg", "litres", "pieces")
     val purposes = listOf("Meal Preparation", "Activity", "Hygiene")
@@ -369,20 +521,32 @@ fun ItemUtilizedForm() {
                     OutlinedTextField(
                         value = itemName,
                         onValueChange = { itemName = it },
-                        label = { Text("Item Name") },
-                        leadingIcon = { Icon(Icons.Default.ShoppingCart, contentDescription = null) },
+                        label = { Text("Item Name", color = Gray900) },
+                        leadingIcon = { Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = Gray900) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Gray900,
+                            unfocusedTextColor = Gray900,
+                            focusedLabelColor = Gray900,
+                            unfocusedLabelColor = Gray500
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     OutlinedTextField(
                         value = dateUsed,
                         onValueChange = { dateUsed = it },
-                        label = { Text("Date of Use") },
-                        leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null) },
+                        label = { Text("Date of Use", color = Gray900) },
+                        leadingIcon = { Icon(Icons.Default.DateRange, contentDescription = null, tint = Gray900) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Gray900,
+                            unfocusedTextColor = Gray900,
+                            focusedLabelColor = Gray900,
+                            unfocusedLabelColor = Gray500
+                        ),
                         modifier = Modifier.fillMaxWidth(),
                         readOnly = true,
                         trailingIcon = {
@@ -399,11 +563,17 @@ fun ItemUtilizedForm() {
                         OutlinedTextField(
                             value = quantity,
                             onValueChange = { quantity = it },
-                            label = { Text("Quantity Used") },
-                            leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null) },
+                            label = { Text("Quantity Used", color = Gray900) },
+                            leadingIcon = { Icon(Icons.Default.Numbers, contentDescription = null, tint = Gray900) },
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Gray900,
+                                unfocusedTextColor = Gray900,
+                                focusedLabelColor = Gray900,
+                                unfocusedLabelColor = Gray500
+                            ),
                             modifier = Modifier.weight(1f)
                         )
 
@@ -416,10 +586,16 @@ fun ItemUtilizedForm() {
                                 OutlinedTextField(
                                     value = selectedUnit,
                                     onValueChange = {},
-                                    label = { Text("Unit") },
+                                    label = { Text("Unit", color = Gray900) },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                                     readOnly = true,
                                     shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Gray900,
+                                        unfocusedTextColor = Gray900,
+                                        focusedLabelColor = Gray900,
+                                        unfocusedLabelColor = Gray500
+                                    ),
                                     modifier = Modifier.menuAnchor()
                                 )
                                 ExposedDropdownMenu(
@@ -449,11 +625,17 @@ fun ItemUtilizedForm() {
                             OutlinedTextField(
                                 value = selectedPurpose,
                                 onValueChange = {},
-                                label = { Text("Purpose") },
-                                leadingIcon = { Icon(Icons.Default.Category, contentDescription = null) },
+                                label = { Text("Purpose", color = Gray900) },
+                                leadingIcon = { Icon(Icons.Default.Category, contentDescription = null, tint = Gray900) },
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showPurposeDropdown) },
                                 readOnly = true,
                                 shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedTextColor = Gray900,
+                                    unfocusedTextColor = Gray900,
+                                    focusedLabelColor = Gray900,
+                                    unfocusedLabelColor = Gray500
+                                ),
                                 modifier = Modifier.menuAnchor().fillMaxWidth()
                             )
                             ExposedDropdownMenu(
@@ -476,10 +658,16 @@ fun ItemUtilizedForm() {
                     OutlinedTextField(
                         value = usedBy,
                         onValueChange = { usedBy = it },
-                        label = { Text("Used By") },
-                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                        label = { Text("Used By", color = Gray900) },
+                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = Gray900) },
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Gray900,
+                            unfocusedTextColor = Gray900,
+                            focusedLabelColor = Gray900,
+                            unfocusedLabelColor = Gray500
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -488,7 +676,17 @@ fun ItemUtilizedForm() {
 
         item {
             Button(
-                onClick = { },
+                onClick = {
+                    if (itemName.isNotBlank() && quantity.isNotBlank()) {
+                        viewModel.saveUtilizedItem(
+                            itemName = itemName,
+                            date = dateUsed,
+                            quantity = quantity,
+                            unit = selectedUnit,
+                            usedFor = selectedPurpose
+                        )
+                    }
+                },
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Orange400),
                 modifier = Modifier.fillMaxWidth().height(52.dp)
@@ -508,7 +706,7 @@ fun ItemUtilizedForm() {
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { millis ->
                         val date = LocalDate.ofEpochDay(millis / (24 * 60 * 60 * 1000))
-                        dateUsed = date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                        dateUsed = date.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
                     }
                     showDatePicker = false
                 }) {
