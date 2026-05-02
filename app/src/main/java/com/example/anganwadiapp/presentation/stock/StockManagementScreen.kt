@@ -68,7 +68,6 @@ fun StockManagementScreen(
             .fillMaxSize()
             .background(Gray50)
     ) {
-        AppTopBar(title = "Stock Management")
 
         Column(
             modifier = Modifier.fillMaxSize()
