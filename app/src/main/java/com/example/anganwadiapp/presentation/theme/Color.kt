@@ -1,4 +1,4 @@
-package com.example.anganwadiapp.ui.theme
+package com.example.anganwadiapp.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 

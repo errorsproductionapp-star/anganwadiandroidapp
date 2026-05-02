@@ -9,13 +9,10 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-    
-    // Provide your dependencies here (Retrofit, Room, etc.)
-    /*
+
     @Provides
     @Singleton
-    fun provideMyRepository(): MyRepository {
-        return MyRepositoryImpl()
+    fun provideApplicationVersion(): String {
+        return "2.4.0"
     }
-    */
 }

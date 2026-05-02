@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.anganwadiapp.core.constants.AppConstants
 import kotlinx.coroutines.delay
 
 @Composable
@@ -23,9 +24,9 @@ fun SplashScreen(onTimeout: () -> Unit) {
     var progress by remember { mutableStateOf(0.4f) }
 
     LaunchedEffect(Unit) {
-        delay(2000)
+        delay(AppConstants.SPLASH_DELAY_MS)
         progress = 1f
-        delay(500)
+        delay(AppConstants.PROGRESS_ANIMATION_DELAY_MS)
         onTimeout()
     }
 
@@ -69,14 +70,14 @@ fun SplashScreen(onTimeout: () -> Unit) {
             Spacer(modifier = Modifier.height(32.dp))
 
             Text(
-                text = "Anganwadi Connect",
+                text = AppConstants.APP_NAME,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black
             )
 
             Text(
-                text = "Child Growth & Care Monitoring",
+                text = AppConstants.APP_SUBTITLE,
                 fontSize = 16.sp,
                 color = Color.Gray,
                 modifier = Modifier.padding(top = 8.dp)
@@ -123,7 +124,7 @@ fun SplashScreen(onTimeout: () -> Unit) {
         }
 
         Text(
-            text = "Version 2.4.0 • Secure Health Network",
+            text = "Version ${AppConstants.APP_VERSION} • Secure Health Network",
             fontSize = 12.sp,
             color = Color.LightGray,
             modifier = Modifier
