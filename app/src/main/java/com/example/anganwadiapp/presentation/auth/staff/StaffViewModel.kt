@@ -3,6 +3,7 @@ package com.example.anganwadiapp.presentation.auth.staff
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.anganwadiapp.core.common.Result
+import com.example.anganwadiapp.core.preferences.PreferencesManager
 import com.example.anganwadiapp.domain.model.Staff
 import com.example.anganwadiapp.domain.repository.StaffRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class StaffViewModel @Inject constructor(
-    private val staffRepository: StaffRepository
+    private val staffRepository: StaffRepository,
+    val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
     private val _registrationState = MutableStateFlow<Result<Unit>?>(null)
@@ -32,12 +34,22 @@ class StaffViewModel @Inject constructor(
     fun login(email: String, password: String) {
         viewModelScope.launch {
             _loginState.value = Result.Loading
-            _loginState.value = staffRepository.loginStaff(email, password)
+            val result = staffRepository.loginStaff(email, password)
+            _loginState.value = result
+            if (result is Result.Success) {
+                preferencesManager.setLoggedIn(isLoggedIn = true, email = email)
+            }
         }
     }
     
     fun resetRegistrationState() {
         _registrationState.value = null
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            preferencesManager.logout()
+        }
     }
 
     fun resetLoginState() {

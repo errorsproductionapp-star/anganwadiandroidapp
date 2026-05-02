@@ -9,24 +9,41 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = SkyBlue60,
+    secondary = SkyBlue40,
+    tertiary = SkyBlueAccent,
+    surface = Color(0xFF121212),
+    background = Color(0xFF0A0A0A),
+    onPrimary = Color(0xFF003C8F),
+    onSecondary = Color(0xFFFFFFFF),
+    onSurface = Color(0xFFE0E0E0)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = SkyBlue40,
+    secondary = SkyBlue60,
+    tertiary = SkyBlueAccent,
+    surface = SurfaceWhite,
+    background = BackgroundGray,
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onSurface = TextPrimary,
+    primaryContainer = SkyBlueLight,
+    onPrimaryContainer = SkyBlue20
 )
 
 @Composable
 fun AnganwadiAppTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -36,6 +53,15 @@ fun AnganwadiAppTheme(
         }
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
+    }
+
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as Activity).window
+            window.statusBarColor = colorScheme.primary.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
     }
 
     MaterialTheme(

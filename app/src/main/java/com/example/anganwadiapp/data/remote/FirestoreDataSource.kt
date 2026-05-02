@@ -42,10 +42,13 @@ class FirestoreDataSource @Inject constructor(
 
     fun getCurrentUid(): String? = auth.currentUser?.uid
 
-    suspend fun getStaffByUid(uid: String): StaffDto? {
+    suspend fun getAnganwadiCenterId(uid: String): String? {
         val centerDoc = firestore.collection("user_centers").document(uid).get().await()
-        val centerId = centerDoc.getString("anganwadiCenterId")
-        if (centerId == null) return null
+        return centerDoc.getString("anganwadiCenterId")
+    }
+
+    suspend fun getStaffByUid(uid: String): StaffDto? {
+        val centerId = getAnganwadiCenterId(uid) ?: return null
         val userDoc = staffCollection
             .document(centerId)
             .collection("users")
@@ -56,10 +59,8 @@ class FirestoreDataSource @Inject constructor(
     }
 
     suspend fun logStaffAttendance(centerId: String, staffName: String, date: String, loginTime: String) {
-        // Path: /{centerId}/attendance_records/{date}/{staffName}
-        // centerId is the collection name
         firestore.collection(centerId)
-            .document("attendance_records") // This doc acts as a parent for the sub-collection
+            .document("attendance_records")
             .collection(date)
             .document(staffName)
             .set(mapOf("loginTime" to loginTime))
@@ -110,5 +111,40 @@ class FirestoreDataSource @Inject constructor(
 
     suspend fun deleteChild(id: String) {
         childrenCollection.document(id).delete().await()
+    }
+
+    // Enrollment Methods
+    suspend fun saveChildEnrollment(child: ChildDto): String {
+        val uid = auth.currentUser?.uid
+            ?: throw IllegalStateException("User not authenticated")
+
+        val anganwadiCenterId = getAnganwadiCenterId(uid)
+            ?: throw IllegalStateException("Anganwadi center ID not found for user")
+
+        val randomId = generateRandom10DigitId()
+
+        val anganwadiCollection = firestore.collection(anganwadiCenterId)
+
+        val childData = child.copy(id = randomId, anganwadiCenterId = anganwadiCenterId)
+        anganwadiCollection.document(randomId).set(childData).await()
+
+        val studentEntry = mapOf(
+            "childId" to randomId,
+            "name" to child.name,
+            "fatherName" to child.fatherName,
+            "fatherMobile" to child.fatherMobile
+        )
+
+        anganwadiCollection.document("students")
+            .collection("records")
+            .document(randomId)
+            .set(studentEntry)
+            .await()
+
+        return randomId
+    }
+
+    private fun generateRandom10DigitId(): String {
+        return (1_000_000_000L..9_999_999_999L).random().toString()
     }
 }

@@ -2,10 +2,15 @@ package com.example.anganwadiapp.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val SkyBlue80 = Color(0xFFB3E5FC)
+val SkyBlue60 = Color(0xFF81D4FA)
+val SkyBlue40 = Color(0xFF0288D1)
+val SkyBlue20 = Color(0xFF01579B)
+val SkyBlue10 = Color(0xFF003C8F)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val SkyBlueLight = Color(0xFFE0F7FA)
+val SkyBlueAccent = Color(0xFF00B8D4)
+val SurfaceWhite = Color(0xFFFFFFFF)
+val BackgroundGray = Color(0xFFF5F7FA)
+val TextPrimary = Color(0xFF1A1A2E)
+val TextSecondary = Color(0xFF6B7280)

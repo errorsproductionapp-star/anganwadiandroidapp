@@ -8,13 +8,21 @@ import com.google.firebase.firestore.IgnoreExtraProperties
 data class ChildDto(
     val id: String = "",
     val name: String = "",
-    val dateOfBirth: Long = 0L,
+    val dateOfBirth: String = "",
+    val admissionDate: String = "",
+    val age: String = "",
     val gender: String = "OTHER",
-    val weight: Float? = null,
-    val height: Float? = null,
-    val motherName: String = "",
     val fatherName: String = "",
-    val registrationDate: Long = 0L,
+    val motherName: String = "",
+    val fatherMobile: String = "",
+    val motherMobile: String = "",
+    val placeOfBirth: String = "",
+    val bloodGroup: String = "",
+    val physicallyChallenged: Boolean = false,
+    val height: Float? = null,
+    val weight: Float? = null,
+    val allergies: String = "",
+    val healthNotes: String = "",
     val anganwadiCenterId: String = "",
     val photoUrl: String? = null
 )
@@ -24,16 +32,26 @@ fun ChildDto.toDomain(): Child {
         id = id,
         name = name,
         dateOfBirth = dateOfBirth,
+        admissionDate = admissionDate,
+        age = age,
         gender = try {
             Gender.valueOf(gender.uppercase())
         } catch (e: Exception) {
             Gender.OTHER
         },
-        weight = weight,
-        height = height,
-        motherName = motherName,
         fatherName = fatherName,
-        registrationDate = registrationDate
+        motherName = motherName,
+        fatherMobile = fatherMobile,
+        motherMobile = motherMobile,
+        placeOfBirth = placeOfBirth,
+        bloodGroup = bloodGroup,
+        physicallyChallenged = physicallyChallenged,
+        height = height,
+        weight = weight,
+        allergies = allergies,
+        healthNotes = healthNotes,
+        anganwadiCenterId = anganwadiCenterId,
+        photoUrl = photoUrl
     )
 }
 
@@ -42,11 +60,21 @@ fun Child.toDto(): ChildDto {
         id = id,
         name = name,
         dateOfBirth = dateOfBirth,
+        admissionDate = admissionDate,
+        age = age,
         gender = gender.name,
-        weight = weight,
-        height = height,
-        motherName = motherName,
         fatherName = fatherName,
-        registrationDate = registrationDate
+        motherName = motherName,
+        fatherMobile = fatherMobile,
+        motherMobile = motherMobile,
+        placeOfBirth = placeOfBirth,
+        bloodGroup = bloodGroup,
+        physicallyChallenged = physicallyChallenged,
+        height = height,
+        weight = weight,
+        allergies = allergies,
+        healthNotes = healthNotes,
+        anganwadiCenterId = anganwadiCenterId,
+        photoUrl = photoUrl
     )
 }
