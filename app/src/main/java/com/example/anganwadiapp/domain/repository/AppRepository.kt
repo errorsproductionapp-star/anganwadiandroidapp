@@ -38,4 +38,8 @@ interface AppRepository {
         weekRangeId: String,
         date: String
     ): Result<Map<String, Any>?>
+
+    suspend fun verifyParentCredentials(childId: String, dob: String): Result<Map<String, Any>?>
+
+    suspend fun getChildByCenterAndId(centerId: String, childId: String): Result<Map<String, Any>?>
 }

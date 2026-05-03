@@ -212,4 +212,22 @@ class AppRepositoryImpl @Inject constructor(
             Result.Error(e.message ?: "Failed to fetch weekly activity plan", e)
         }
     }
+
+    override suspend fun verifyParentCredentials(childId: String, dob: String): Result<Map<String, Any>?> {
+        return try {
+            val data = firestoreDataSource.verifyParentCredentials(childId, dob)
+            Result.Success(data)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to verify credentials", e)
+        }
+    }
+
+    override suspend fun getChildByCenterAndId(centerId: String, childId: String): Result<Map<String, Any>?> {
+        return try {
+            val data = firestoreDataSource.getChildByCenterAndId(centerId, childId)
+            Result.Success(data)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to fetch child details", e)
+        }
+    }
 }

@@ -14,3 +14,9 @@ val SurfaceWhite = Color(0xFFFFFFFF)
 val BackgroundGray = Color(0xFFF5F7FA)
 val TextPrimary = Color(0xFF1A1A2E)
 val TextSecondary = Color(0xFF6B7280)
+
+// In com.example.anganwadiapp.ui.theme
+val PrimaryBlue = Color(0xFF2563EB)
+val BgLight = Color(0xFFF8FAFC)
+val TextDark = Color(0xFF1E293B)
+val TextGray = Color(0xFF64748B)

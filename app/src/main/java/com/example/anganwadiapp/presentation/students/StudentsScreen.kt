@@ -298,6 +298,19 @@ private fun StudentCard(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                    Spacer(Modifier.height(3.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            "ID: ${student.id.takeLast(10)}",
+                            fontSize = 12.sp,
+                            color = Gray900,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
                 }
 
                 Box(
@@ -366,13 +379,7 @@ private fun StudentCard(
 
                 Spacer(Modifier.weight(1f))
 
-                Text(
-                    "ID: ${student.id.takeLast(6)}",
-                    fontSize = 8.sp,
-                    color = Gray900,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                )
+
             }
         }
     }
@@ -842,7 +849,7 @@ private fun StudentDetailPopup(
                             color = Gray900
                         )
                         Text(
-                            "ID: ${student.id.takeLast(6)}",
+                            "ID: ${student.id.takeLast(10)}",
                             fontSize = 11.sp,
                             color = Gray400,
                             fontWeight = FontWeight.Medium

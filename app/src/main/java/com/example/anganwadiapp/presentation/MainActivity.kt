@@ -9,6 +9,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.anganwadiapp.presentation.auth.staff.StaffAuthScreen
 import com.example.anganwadiapp.presentation.auth.staff.StaffLoginScreen
 import com.example.anganwadiapp.presentation.auth.staff.StaffRegistrationScreen
+import com.example.anganwadiapp.presentation.auth.parent.ParentLoginScreen
+import com.example.anganwadiapp.presentation.auth.parent.ParentViewModel
+import com.example.anganwadiapp.presentation.auth.parent.ParentWelcomeScreen
 import com.example.anganwadiapp.presentation.auth.staff.StaffViewModel
 import com.example.anganwadiapp.presentation.main.MainScreen
 import com.example.anganwadiapp.presentation.role_selection.RoleSelectionScreen
@@ -51,7 +54,7 @@ class MainActivity : ComponentActivity() {
                                 if (role == "Staff") {
                                     authScreen = "staff_auth"
                                 } else {
-                                    authScreen = "main_guest"
+                                    authScreen = "parent_login"
                                 }
                             })
                         }
@@ -75,11 +78,47 @@ class MainActivity : ComponentActivity() {
                                 onBack = { authScreen = "staff_auth" }
                             )
                         }
+                        authScreen == "parent_login" -> {
+                            ParentLoginScreen(
+                                onLoginSuccess = { childId, centerId ->
+                                    authScreen = "parent_welcome_${childId}_$centerId"
+                                },
+                                onBack = { authScreen = "role_selection" }
+                            )
+                        }
                         authScreen == "main_guest" -> {
                             MainScreen(onLogout = {
                                 isLoggedIn = false
                                 authScreen = "role_selection"
                             })
+                        }
+                        authScreen?.startsWith("parent_welcome") == true -> {
+                            val parts = authScreen!!.removePrefix("parent_welcome_").split("_")
+                            val childId = parts.getOrNull(0) ?: ""
+                            val centerId = parts.getOrNull(1) ?: ""
+                            val parentViewModel: ParentViewModel = hiltViewModel()
+                            val childDetails by parentViewModel.childDetails.collectAsState()
+
+                            LaunchedEffect(childId, centerId) {
+                                if (childId.isNotEmpty() && centerId.isNotEmpty()) {
+                                    parentViewModel.fetchChildDetails(centerId, childId)
+                                }
+                            }
+
+                            val childName = childDetails?.get("name") as? String ?: ""
+                            val fatherName = childDetails?.get("fatherName") as? String ?: ""
+                            val motherName = childDetails?.get("motherName") as? String ?: ""
+
+                            ParentWelcomeScreen(
+                                childName = childName,
+                                fatherName = fatherName,
+                                motherName = motherName,
+                                childId = childId,
+                                onLogout = {
+                                    parentViewModel.resetState()
+                                    authScreen = "role_selection"
+                                }
+                            )
                         }
                         else -> {
                             RoleSelectionScreen(onContinue = { role ->

@@ -14,6 +14,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.io.path.exists
 
 @Singleton
 class FirestoreDataSource @Inject constructor(
@@ -62,7 +63,12 @@ class FirestoreDataSource @Inject constructor(
         return userDoc.toObject(StaffDto::class.java)?.copy(id = uid)
     }
 
-    suspend fun logStaffAttendance(centerId: String, staffName: String, date: String, loginTime: String) {
+    suspend fun logStaffAttendance(
+        centerId: String,
+        staffName: String,
+        date: String,
+        loginTime: String
+    ) {
         firestore.collection(centerId)
             .document("attendance_records")
             .collection(date)
@@ -125,7 +131,9 @@ class FirestoreDataSource @Inject constructor(
                     return@addSnapshotListener
                 }
                 val children = snapshot?.documents?.filter { doc ->
-                    !doc.id.startsWith("students") && !doc.id.startsWith("attendance") && !doc.id.startsWith("student_attendance")
+                    !doc.id.startsWith("students") && !doc.id.startsWith("attendance") && !doc.id.startsWith(
+                        "student_attendance"
+                    )
                 }?.mapNotNull { doc ->
                     doc.toChildDto()
                 } ?: emptyList()
@@ -283,6 +291,12 @@ class FirestoreDataSource @Inject constructor(
             .set(studentEntry)
             .await()
 
+        // Save childId -> centerId mapping for parent login
+        firestore.collection("studentcenterid")
+            .document(randomId)
+            .set(mapOf("centerId" to anganwadiCenterId))
+            .await()
+
         return randomId
     }
 
@@ -292,6 +306,20 @@ class FirestoreDataSource @Inject constructor(
 
     private fun formatTimestamp(millis: Long): String {
         return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(java.util.Date(millis))
+    }
+
+    // Parent Login Methods
+
+    suspend fun getChildByCenterAndId(centerId: String, childId: String): Map<String, Any>? {
+        val childDoc = firestore.collection(centerId).document(childId).get().await()
+        if (!childDoc.exists()) return null
+        return mapOf(
+            "childId" to childId,
+            "centerId" to centerId,
+            "name" to (childDoc.getString("name") ?: ""),
+            "fatherName" to (childDoc.getString("fatherName") ?: ""),
+            "motherName" to (childDoc.getString("motherName") ?: "")
+        )
     }
 
     // Diet Plan Methods
@@ -364,4 +392,28 @@ class FirestoreDataSource @Inject constructor(
             .await()
         return if (doc.exists()) doc.data else null
     }
+// ... (previous code)
+suspend fun verifyParentCredentials(childId: String, dob: String): Map<String, Any>? {
+    // Look up centerId from studentcenterid collection
+    val mappingDoc = firestore.collection("studentcenterid").document(childId).get().await()
+    if (!mappingDoc.exists()) return null
+
+    val centerId = mappingDoc.getString("centerId") ?: return null
+
+    // Fetch child document from the center's collection
+    val childDoc = firestore.collection(centerId).document(childId).get().await()
+    if (!childDoc.exists()) return null
+
+    val storedDob = childDoc.getString("dateOfBirth") ?: ""
+    if (storedDob != dob) return null
+
+    return mapOf(
+        "childId" to childId,
+        "centerId" to centerId,
+        "name" to (childDoc.getString("name") ?: ""),
+        "fatherName" to (childDoc.getString("fatherName") ?: ""),
+        "motherName" to (childDoc.getString("motherName") ?: ""),
+        "dateOfBirth" to storedDob
+    )
 }
+} // <--- This should be the LAST brace in the file (closing the class)
