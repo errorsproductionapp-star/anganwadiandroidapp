@@ -103,6 +103,41 @@ class ParentViewModel @Inject constructor(
     fun resetAttendanceState() {
         _attendanceState.value = ParentAttendanceState.Idle
     }
+
+    private val _dietPlanState = MutableStateFlow<ParentDietPlanState>(ParentDietPlanState.Idle)
+    val dietPlanState: StateFlow<ParentDietPlanState> = _dietPlanState
+
+    fun fetchDietPlan(centerId: String, date: String) {
+        _dietPlanState.value = ParentDietPlanState.Loading
+        viewModelScope.launch {
+            val result = repository.getDietPlan(centerId, date)
+            when (result) {
+                is Result.Success -> {
+                    val data = result.data
+                    if (data == null) {
+                        _dietPlanState.value = ParentDietPlanState.NoData
+                        return@launch
+                    }
+                    _dietPlanState.value = ParentDietPlanState.Loaded(data)
+                }
+                is Result.Error -> {
+                    _dietPlanState.value = ParentDietPlanState.Error(result.message ?: "Failed to fetch diet plan")
+                }
+            }
+        }
+    }
+
+    fun resetDietPlanState() {
+        _dietPlanState.value = ParentDietPlanState.Idle
+    }
+}
+
+sealed class ParentDietPlanState {
+    object Idle : ParentDietPlanState()
+    object Loading : ParentDietPlanState()
+    data class Loaded(val dietPlan: Map<String, Any>) : ParentDietPlanState()
+    data class Error(val message: String) : ParentDietPlanState()
+    object NoData : ParentDietPlanState()
 }
 
 sealed class ParentLoginState {

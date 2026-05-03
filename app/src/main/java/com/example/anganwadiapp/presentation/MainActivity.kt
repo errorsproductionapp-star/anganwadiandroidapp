@@ -187,7 +187,11 @@ class MainActivity : ComponentActivity() {
                             val parts = authScreen.removePrefix("parent_food_menu_").split("_")
                             val childId = parts.getOrNull(0) ?: ""
                             val centerId = parts.getOrNull(1) ?: ""
-                            ParentFoodMenuScreen(onBack = { authScreen = "parent_main_${childId}_$centerId" })
+                            ParentFoodMenuScreen(
+                                childId = childId,
+                                centerId = centerId,
+                                onBack = { authScreen = "parent_main_${childId}_$centerId" }
+                            )
                         }
                         authScreen?.startsWith("parent_activity_rating") == true -> {
                             val parts = authScreen.removePrefix("parent_activity_rating_").split("_")
