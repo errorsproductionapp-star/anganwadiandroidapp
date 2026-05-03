@@ -177,7 +177,11 @@ class MainActivity : ComponentActivity() {
                             val parts = authScreen.removePrefix("parent_attendance_").split("_")
                             val childId = parts.getOrNull(0) ?: ""
                             val centerId = parts.getOrNull(1) ?: ""
-                            ParentAttendancePreviewScreen(onBack = { authScreen = "parent_main_${childId}_$centerId" })
+                            ParentAttendancePreviewScreen(
+                                childId = childId,
+                                centerId = centerId,
+                                onBack = { authScreen = "parent_main_${childId}_$centerId" }
+                            )
                         }
                         authScreen?.startsWith("parent_food_menu") == true -> {
                             val parts = authScreen.removePrefix("parent_food_menu_").split("_")

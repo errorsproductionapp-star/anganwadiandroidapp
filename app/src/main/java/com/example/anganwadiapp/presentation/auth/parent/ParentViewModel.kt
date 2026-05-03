@@ -55,6 +55,54 @@ class ParentViewModel @Inject constructor(
         _loginState.value = ParentLoginState.Idle
         _childDetails.value = null
     }
+
+    private val _attendanceState = MutableStateFlow<ParentAttendanceState>(ParentAttendanceState.Idle)
+    val attendanceState: StateFlow<ParentAttendanceState> = _attendanceState
+
+    fun fetchAttendance(centerId: String, childId: String, date: String) {
+        _attendanceState.value = ParentAttendanceState.Loading
+        viewModelScope.launch {
+            val result = repository.getTodayAttendance(centerId, date)
+            when (result) {
+                is Result.Success -> {
+                    val data = result.data
+                    if (data == null) {
+                        _attendanceState.value = ParentAttendanceState.NoData
+                        return@launch
+                    }
+                    val presentStudents = data["presentStudents"] as? List<*> ?: emptyList<Any>()
+                    val absentStudents = data["absentStudents"] as? List<*> ?: emptyList<Any>()
+
+                    val isPresent = presentStudents.any { student ->
+                        val map = student as? Map<*, *>
+                        map?.get("id").toString() == childId
+                    }
+
+                    if (isPresent) {
+                        _attendanceState.value = ParentAttendanceState.Loaded(
+                            ChildAttendanceStatus(isPresent = true, hasData = true)
+                        )
+                    } else {
+                        val absentEntry = absentStudents.find { student ->
+                            val map = student as? Map<*, *>
+                            map?.get("id").toString() == childId
+                        } as? Map<*, *>
+                        val reason = absentEntry?.get("reason")?.toString() ?: ""
+                        _attendanceState.value = ParentAttendanceState.Loaded(
+                            ChildAttendanceStatus(isPresent = false, absentReason = reason, hasData = true)
+                        )
+                    }
+                }
+                is Result.Error -> {
+                    _attendanceState.value = ParentAttendanceState.Error(result.message ?: "Failed to fetch attendance")
+                }
+            }
+        }
+    }
+
+    fun resetAttendanceState() {
+        _attendanceState.value = ParentAttendanceState.Idle
+    }
 }
 
 sealed class ParentLoginState {
@@ -62,4 +110,18 @@ sealed class ParentLoginState {
     object Loading : ParentLoginState()
     data class Success(val data: Map<String, Any>) : ParentLoginState()
     data class Error(val message: String) : ParentLoginState()
+}
+
+data class ChildAttendanceStatus(
+    val isPresent: Boolean,
+    val absentReason: String = "",
+    val hasData: Boolean = true
+)
+
+sealed class ParentAttendanceState {
+    object Idle : ParentAttendanceState()
+    object Loading : ParentAttendanceState()
+    data class Loaded(val status: ChildAttendanceStatus) : ParentAttendanceState()
+    data class Error(val message: String) : ParentAttendanceState()
+    object NoData : ParentAttendanceState()
 }
