@@ -42,4 +42,13 @@ interface AppRepository {
     suspend fun verifyParentCredentials(childId: String, dob: String): Result<Map<String, Any>?>
 
     suspend fun getChildByCenterAndId(centerId: String, childId: String): Result<Map<String, Any>?>
+
+    suspend fun saveProgressRating(
+        centerId: String,
+        date: String,
+        studentId: String,
+        ratingData: Map<String, Any>
+    ): Result<Unit>
+
+    suspend fun getTodaysProgressRatings(centerId: String, date: String): Result<List<Map<String, Any>>>
 }

@@ -1,592 +1,716 @@
 package com.example.anganwadiapp.presentation.progress
 
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 
-private val Sky50 = Color(0xFFF0F9FF)
-private val Sky100 = Color(0xFFE0F2FE)
-private val Sky400 = Color(0xFF38BDF8)
-private val Sky600 = Color(0xFF0284C7)
-private val Sky700 = Color(0xFF0369A1)
-private val Gray50 = Color(0xFFF9FAFB)
-private val Gray100 = Color(0xFFF3F4F6)
-private val Gray200 = Color(0xFFE5E7EB)
-private val Gray300 = Color(0xFFD1D5DB)
-private val Gray400 = Color(0xFF9CA3AF)
-private val Gray500 = Color(0xFF6B7280)
-private val Gray700 = Color(0xFF374151)
-private val Gray900 = Color(0xFF0F172A)
-private val Green400 = Color(0xFF4ADE80)
-private val Green50 = Color(0xFFF0FDF4)
-private val Green100 = Color(0xFFDCFCE7)
-private val Green600 = Color(0xFF16A34A)
-private val Orange400 = Color(0xFFFB923C)
-private val Orange50 = Color(0xFFFFF7ED)
-private val Orange100 = Color(0xFFFFEDD5)
-private val Purple400 = Color(0xFFC084FC)
-private val Purple50 = Color(0xFFFAF5FF)
-private val Purple100 = Color(0xFFF3E8FF)
-private val Rose400 = Color(0xFFFB7185)
-private val Rose50 = Color(0xFFFFF1F2)
-private val Rose100 = Color(0xFFFFE4E6)
+// ── Palette ──────────────────────────────────────────────────────────────────
+private val PageBg         = Color(0xFFF0F7FF)          // very light sky wash
+private val CardBg         = Color(0xFFFFFFFF)
+private val CardBorder     = Color(0xFFD6E8F8)
+private val PrimaryBlue    = Color(0xFF1E82D0)           // sky blue
+private val PrimaryMid     = Color(0xFF3B9FE8)
+private val PrimaryLight   = Color(0xFFE0F2FF)
+private val PrimaryXLight  = Color(0xFFF0F8FF)
+private val AccentTeal     = Color(0xFF0EA5C9)
+private val TextPrimary    = Color(0xFF0E2A45)
+private val TextSecondary  = Color(0xFF4A7A9B)
+private val TextHint       = Color(0xFF94B8D0)
+private val DividerColor   = Color(0xFFE8F3FB)
+private val RatedGreen     = Color(0xFF0E9F72)
+private val RatedBg        = Color(0xFFE8FBF4)
+private val RatedBorder    = Color(0xFFB8EDDA)
+private val UnratedAmber   = Color(0xFFF59E0B)
+private val UnratedBg      = Color(0xFFFFF8E8)
+private val UnratedBorder  = Color(0xFFFFE5A0)
+private val StarGold       = Color(0xFFFBBF24)
+private val StarEmpty      = Color(0xFFDBECF9)
+// Header gradient
+private val HeaderStart    = Color(0xFF1E82D0)
+private val HeaderEnd      = Color(0xFF0EA5C9)
 
-data class ProgressCategory(
-    val name: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val color: Color,
-    val bg: Color,
-    val rating: Float,
-    val maxRating: Float
-)
-
-data class StudentProgress(
-    val id: String,
-    val name: String,
-    val initials: String,
-    val age: String,
-    val overallScore: Float,
-    val categories: List<ProgressCategory>
-)
-
-enum class RatingLevel(val label: String, val color: Color, val bg: Color, val range: String) {
-    EXCELLENT("Excellent", Green600, Green100, "4.0 - 5.0"),
-    GOOD("Good", Sky600, Sky100, "3.0 - 3.9"),
-    AVERAGE("Average", Orange400, Orange100, "2.0 - 2.9"),
-    NEEDS_SUPPORT("Needs Support", Rose400, Rose100, "0.0 - 1.9")
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProgressRatingScreen(
-    onBack: () -> Unit = {}
+    viewModel: ProgressRatingViewModel = hiltViewModel()
 ) {
-    var selectedFilter by remember { mutableStateOf<RatingLevel?>(null) }
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedStudent by remember { mutableStateOf<StudentProgress?>(null) }
-    var showRatingDialog by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsState()
+    var selectedStudentId by remember { mutableStateOf<String?>(null) }
+    var showRatingDialog  by remember { mutableStateOf(false) }
 
-    val students = remember {
-        listOf(
-            StudentProgress("1", "Priya Sharma", "PS", "4y 2m", 4.2f, listOf(
-                ProgressCategory("Language", Icons.Default.RecordVoiceOver, Sky600, Sky100, 4.5f, 5f),
-                ProgressCategory("Numeracy", Icons.Default.Calculate, Green600, Green100, 4.0f, 5f),
-                ProgressCategory("Motor Skills", Icons.Default.Accessibility, Purple400, Purple100, 4.8f, 5f),
-                ProgressCategory("Social", Icons.Default.Groups, Orange400, Orange100, 3.5f, 5f)
-            )),
-            StudentProgress("2", "Rahul Kumar", "RK", "5y 1m", 3.6f, listOf(
-                ProgressCategory("Language", Icons.Default.RecordVoiceOver, Sky600, Sky100, 3.8f, 5f),
-                ProgressCategory("Numeracy", Icons.Default.Calculate, Green600, Green100, 3.2f, 5f),
-                ProgressCategory("Motor Skills", Icons.Default.Accessibility, Purple400, Purple100, 4.0f, 5f),
-                ProgressCategory("Social", Icons.Default.Groups, Orange400, Orange100, 3.4f, 5f)
-            )),
-            StudentProgress("3", "Anita Devi", "AD", "3y 8m", 2.8f, listOf(
-                ProgressCategory("Language", Icons.Default.RecordVoiceOver, Sky600, Sky100, 3.0f, 5f),
-                ProgressCategory("Numeracy", Icons.Default.Calculate, Green600, Green100, 2.5f, 5f),
-                ProgressCategory("Motor Skills", Icons.Default.Accessibility, Purple400, Purple100, 3.2f, 5f),
-                ProgressCategory("Social", Icons.Default.Groups, Orange400, Orange100, 2.5f, 5f)
-            )),
-            StudentProgress("4", "Arjun Patel", "AP", "4y 6m", 4.7f, listOf(
-                ProgressCategory("Language", Icons.Default.RecordVoiceOver, Sky600, Sky100, 4.8f, 5f),
-                ProgressCategory("Numeracy", Icons.Default.Calculate, Green600, Green100, 4.5f, 5f),
-                ProgressCategory("Motor Skills", Icons.Default.Accessibility, Purple400, Purple100, 5.0f, 5f),
-                ProgressCategory("Social", Icons.Default.Groups, Orange400, Orange100, 4.5f, 5f)
-            )),
-            StudentProgress("5", "Meena Raj", "MR", "5y 3m", 1.9f, listOf(
-                ProgressCategory("Language", Icons.Default.RecordVoiceOver, Sky600, Sky100, 2.0f, 5f),
-                ProgressCategory("Numeracy", Icons.Default.Calculate, Green600, Green100, 1.8f, 5f),
-                ProgressCategory("Motor Skills", Icons.Default.Accessibility, Purple400, Purple100, 2.2f, 5f),
-                ProgressCategory("Social", Icons.Default.Groups, Orange400, Orange100, 1.5f, 5f)
-            )),
-            StudentProgress("6", "Kavitha M", "KM", "4y 0m", 3.3f, listOf(
-                ProgressCategory("Language", Icons.Default.RecordVoiceOver, Sky600, Sky100, 3.5f, 5f),
-                ProgressCategory("Numeracy", Icons.Default.Calculate, Green600, Green100, 3.0f, 5f),
-                ProgressCategory("Motor Skills", Icons.Default.Accessibility, Purple400, Purple100, 3.8f, 5f),
-                ProgressCategory("Social", Icons.Default.Groups, Orange400, Orange100, 3.0f, 5f)
-            ))
-        )
+    val today     = uiState.todayDate
+    val rated     = uiState.students.count { it.isRated }
+    val unrated   = uiState.students.size - rated
+    val total     = uiState.students.size
+    val filtered  = if (uiState.searchQuery.isBlank()) uiState.students
+    else uiState.students.filter {
+        it.name.contains(uiState.searchQuery, ignoreCase = true)
     }
-
-    val filteredStudents = students.filter { s ->
-        (selectedFilter == null || getRatingLevelForScore(s.overallScore) == selectedFilter) &&
-        (searchQuery.isBlank() || s.name.contains(searchQuery, ignoreCase = true))
+    val selectedStudent = selectedStudentId?.let { id ->
+        uiState.students.find { it.id == id }
     }
-
-    val distribution = listOf(
-        RatingLevel.EXCELLENT to students.count { getRatingLevelForScore(it.overallScore) == RatingLevel.EXCELLENT },
-        RatingLevel.GOOD to students.count { getRatingLevelForScore(it.overallScore) == RatingLevel.GOOD },
-        RatingLevel.AVERAGE to students.count { getRatingLevelForScore(it.overallScore) == RatingLevel.AVERAGE },
-        RatingLevel.NEEDS_SUPPORT to students.count { getRatingLevelForScore(it.overallScore) == RatingLevel.NEEDS_SUPPORT }
-    )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Gray50)
+            .background(PageBg)
     ) {
-        // Header
+        // ── Gradient header bar ──────────────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Purple400, Color(0xFF9333EA))
-                    )
+                    Brush.horizontalGradient(listOf(HeaderStart, HeaderEnd))
                 )
+                .padding(horizontal = 20.dp, vertical = 15.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 8.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
-                }
-                Spacer(Modifier.width(4.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Progress Rating", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text("${students.size} students tracked", fontSize = 12.sp, color = Color.White.copy(alpha = 0.7f))
-                }
-                Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = Color.White.copy(alpha = 0.7f))
-                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = today,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    letterSpacing = 0.3.sp
+                )
+
+                Text(
+                    text = "Today's Progress Overview",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
             }
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 24.dp)
-        ) {
-            // Search Bar
-            item {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search students...", color = Gray400) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Gray400) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Purple400,
-                        unfocusedBorderColor = Gray200
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                )
+        if (uiState.isLoading && uiState.students.isEmpty()) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = PrimaryBlue)
             }
-
-            // Rating Distribution Chart
-            item {
-                RatingDistributionCard(distribution = distribution)
-            }
-
-            // Filter Chips
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        label = "All",
-                        isSelected = selectedFilter == null,
-                        color = Gray500,
-                        bg = Gray100,
-                        onClick = { selectedFilter = null }
-                    )
-                    RatingLevel.values().forEach { level ->
-                        FilterChip(
-                            label = level.label,
-                            isSelected = selectedFilter == level,
-                            color = level.color,
-                            bg = level.bg,
-                            onClick = { selectedFilter = if (selectedFilter == level) null else level }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // ── Stat chips ───────────────────────────────────────────────
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        StatCard(
+                            label    = "Total",
+                            value    = "$total",
+                            icon     = Icons.Default.Groups,
+                            bgColor  = PrimaryLight,
+                            iconColor= PrimaryBlue,
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatCard(
+                            label    = "Rated",
+                            value    = "$rated",
+                            icon     = Icons.Default.CheckCircle,
+                            bgColor  = RatedBg,
+                            iconColor= RatedGreen,
+                            modifier = Modifier.weight(1f)
+                        )
+                        StatCard(
+                            label    = "Pending",
+                            value    = "$unrated",
+                            icon     = Icons.Default.HourglassEmpty,
+                            bgColor  = UnratedBg,
+                            iconColor= UnratedAmber,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
-            }
 
-            // Student List
-            items(filteredStudents) { student ->
-                StudentProgressCard(
-                    student = student,
-                    onClick = { selectedStudent = student },
-                    onRate = { showRatingDialog = true }
-                )
-                Spacer(Modifier.height(8.dp))
-            }
+                // ── Progress bar ─────────────────────────────────────────────
+                item {
+                    if (total > 0) RatingProgress(rated, total)
+                }
 
-            // No Results
-            item {
-                if (filteredStudents.isEmpty()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 40.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                // ── Search ───────────────────────────────────────────────────
+                item {
+                    SearchBar(
+                        query    = uiState.searchQuery,
+                        onChange = { viewModel.onSearchQueryChange(it) }
+                    )
+                }
+
+                // ── Section heading ──────────────────────────────────────────
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.SearchOff, contentDescription = null, tint = Gray300, modifier = Modifier.size(48.dp))
-                        Spacer(Modifier.height(12.dp))
-                        Text("No students found", fontSize = 15.sp, fontWeight = FontWeight.Medium, color = Gray500)
+                        Text(
+                            "Students",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = PrimaryLight
+                        ) {
+                            Text(
+                                "${filtered.size}",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = PrimaryBlue,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                            )
+                        }
                     }
+                }
+
+                // ── Student rows ─────────────────────────────────────────────
+                items(filtered, key = { it.id }) { student ->
+                    StudentRatingRow(
+                        student = student,
+                        onClick = {
+                            selectedStudentId = student.id
+                            showRatingDialog  = true
+                        }
+                    )
+                }
+
+                // ── Save button ──────────────────────────────────────────────
+                item {
+                    Spacer(Modifier.height(4.dp))
+                    SaveButton(
+                        isSaved  = uiState.isSaved,
+                        allRated = uiState.allRated,
+                        onClick  = { viewModel.saveAllRatings() }
+                    )
+                    Spacer(Modifier.height(20.dp))
                 }
             }
         }
     }
 
-    if (selectedStudent != null) {
-        StudentDetailDialog(
-            student = selectedStudent!!,
-            onDismiss = { selectedStudent = null }
-        )
-    }
-
-    if (showRatingDialog) {
-        AlertDialog(
-            onDismissRequest = { showRatingDialog = false },
-            title = { Text("Rate Student", color = Gray900) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Select rating for each development area:", fontSize = 13.sp, color = Gray500)
-                    listOf("Language & Communication", "Numeracy Skills", "Motor Skills", "Social Development").forEach { area ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(area, fontSize = 13.sp, color = Gray700)
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                (1..5).forEach { star ->
-                                    Icon(
-                                        Icons.Default.Star,
-                                        contentDescription = null,
-                                        tint = if (star <= 3) Orange400 else Gray200,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(onClick = { showRatingDialog = false }, shape = RoundedCornerShape(12.dp)) {
-                    Text("Save Rating")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showRatingDialog = false }) {
-                    Text("Cancel")
-                }
+    if (showRatingDialog && selectedStudent != null) {
+        RatingDialog(
+            student        = selectedStudent!!,
+            onDismiss      = { showRatingDialog = false; selectedStudentId = null },
+            onRatingChange = { category, rating ->
+                viewModel.updateRating(selectedStudent!!.id, category, rating)
             }
         )
     }
 }
 
+// ── Stat Card ─────────────────────────────────────────────────────────────────
 @Composable
-private fun RatingDistributionCard(
-    distribution: List<Pair<RatingLevel, Int>>
+private fun StatCard(
+    label    : String,
+    value    : String,
+    icon     : ImageVector,
+    bgColor  : Color,
+    iconColor: Color,
+    modifier : Modifier = Modifier
 ) {
-    val total = distribution.sumOf { it.second }.toFloat()
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        shadowElevation = 2.dp
+        modifier        = modifier,
+        shape           = RoundedCornerShape(16.dp),
+        color           = CardBg,
+        shadowElevation = 2.dp,
+        border          = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
     ) {
         Column(
-            modifier = Modifier
+            modifier              = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(vertical = 14.dp, horizontal = 10.dp),
+            horizontalAlignment   = Alignment.CenterHorizontally
         ) {
-            Text("Rating Distribution", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Gray900)
-            Spacer(Modifier.height(14.dp))
-
-            // Circular progress overview
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+            // Icon bubble
+            Box(
+                modifier           = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(bgColor),
+                contentAlignment   = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier.size(100.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    val avgScore = distribution.fold(0f) { acc, (level, count) ->
-                        acc + when (level) {
-                            RatingLevel.EXCELLENT -> 4.5f * count
-                            RatingLevel.GOOD -> 3.5f * count
-                            RatingLevel.AVERAGE -> 2.5f * count
-                            RatingLevel.NEEDS_SUPPORT -> 1.0f * count
-                        }
-                    } / if (total > 0) total else 1f
+                Icon(icon, null, tint = iconColor, modifier = Modifier.size(18.dp))
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                value,
+                fontSize   = 18.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color      = TextPrimary,
+                textAlign  = TextAlign.Center
+            )
+            Text(
+                label,
+                fontSize   = 10.sp,
+                color      = TextSecondary,
+                fontWeight = FontWeight.Medium,
+                textAlign  = TextAlign.Center
+            )
+        }
+    }
+}
 
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val radius = size.minDimension / 2 - 8.dp.toPx()
-                        drawArc(
-                            color = Gray100,
-                            startAngle = -90f,
-                            sweepAngle = 360f,
-                            useCenter = false,
-                            style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-                        )
-                        val sweep = (avgScore / 5f) * 360f
-                        drawArc(
-                            color = Purple400,
-                            startAngle = -90f,
-                            sweepAngle = sweep,
-                            useCenter = false,
-                            style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(String.format("%.1f", avgScore), fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Gray900)
-                        Text("avg", fontSize = 10.sp, color = Gray500)
-                    }
+// ── Rating Progress ───────────────────────────────────────────────────────────
+@Composable
+private fun RatingProgress(rated: Int, total: Int) {
+    if (total == 0) return
+    val pct       = (rated.toFloat() / total * 100).toInt()
+    val ratedFrac = rated.toFloat() / total
+
+    Surface(
+        shape           = RoundedCornerShape(16.dp),
+        color           = CardBg,
+        shadowElevation = 2.dp,
+        border          = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment     = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Rating Progress",
+                    fontSize   = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = TextPrimary
+                )
+                Surface(shape = RoundedCornerShape(20.dp), color = if (pct == 100) RatedBg else PrimaryLight) {
+                    Text(
+                        "$pct% complete",
+                        fontSize   = 11.sp,
+                        color      = if (pct == 100) RatedGreen else PrimaryBlue,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier   = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                    )
                 }
-
-                Spacer(Modifier.width(20.dp))
-
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    distribution.forEach { (level, count) ->
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(
-                                Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(level.color)
+            }
+            Spacer(Modifier.height(12.dp))
+            // Progress track with rounded ends
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(DividerColor)
+            ) {
+                if (ratedFrac > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(ratedFrac)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(
+                                Brush.horizontalGradient(
+                                    listOf(PrimaryBlue, AccentTeal)
+                                )
                             )
-                            Text(level.label, fontSize = 12.sp, color = Gray700, modifier = Modifier.width(90.dp))
-                            Text("$count", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Gray900)
-                        }
-                    }
+                    )
                 }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("$rated rated", fontSize = 11.sp, color = RatedGreen, fontWeight = FontWeight.Medium)
+                Text("${total - rated} left", fontSize = 11.sp, color = TextHint, fontWeight = FontWeight.Medium)
             }
         }
     }
 }
 
+// ── Search Bar ────────────────────────────────────────────────────────────────
 @Composable
-private fun FilterChip(
-    label: String,
-    isSelected: Boolean,
-    color: Color,
-    bg: Color,
-    onClick: () -> Unit
-) {
+private fun SearchBar(query: String, onChange: (String) -> Unit) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) bg else Color.White,
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (isSelected) color else Gray200),
-        onClick = onClick
+        modifier        = Modifier.fillMaxWidth(),
+        shape           = RoundedCornerShape(14.dp),
+        color           = CardBg,
+        shadowElevation = 1.dp,
+        border          = androidx.compose.foundation.BorderStroke(1.5.dp, CardBorder)
     ) {
-        Text(
-            label,
-            fontSize = 12.sp,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (isSelected) color else Gray500,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-        )
+        Row(
+            modifier          = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Search, null, tint = PrimaryMid, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(10.dp))
+            TextField(
+                value             = query,
+                onValueChange     = onChange,
+                placeholder       = { Text("Search students…", fontSize = 14.sp, color = TextHint) },
+                singleLine        = true,
+                colors            = TextFieldDefaults.colors(
+                    focusedContainerColor   = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor   = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor        = TextPrimary,
+                    unfocusedTextColor      = TextPrimary
+                ),
+                textStyle         = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
+                modifier          = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 
+// ── Student Row ───────────────────────────────────────────────────────────────
 @Composable
-private fun StudentProgressCard(
-    student: StudentProgress,
-    onClick: () -> Unit,
-    onRate: () -> Unit
+private fun StudentRatingRow(
+    student: StudentRatingItem,
+    onClick: () -> Unit
 ) {
-    val level = getRatingLevelForScore(student.overallScore)
+    val (statusBg, statusBorder, avatarBg) = if (student.isRated)
+        Triple(RatedBg, RatedBorder, RatedGreen)
+    else
+        Triple(CardBg, CardBorder, PrimaryBlue)
 
     Surface(
-        modifier = Modifier
+        modifier        = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        color = Color.White,
-        shadowElevation = 2.dp
+        shape           = RoundedCornerShape(16.dp),
+        color           = statusBg,
+        border          = androidx.compose.foundation.BorderStroke(1.dp, statusBorder),
+        shadowElevation = 1.dp
     ) {
         Row(
-            modifier = Modifier
+            modifier          = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(horizontal = 14.dp, vertical = 13.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Avatar
             Box(
-                modifier = Modifier
+                modifier         = Modifier
                     .size(44.dp)
                     .clip(CircleShape)
-                    .background(level.bg),
+                    .background(avatarBg.copy(alpha = 0.15f))
+                    .border(2.dp, avatarBg.copy(alpha = 0.4f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     student.initials,
-                    fontSize = 14.sp,
+                    fontSize   = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = level.color
+                    color      = avatarBg
+                )
+            }
+            Spacer(Modifier.width(12.dp))
+
+            // Name + age
+            Column(Modifier.weight(1f)) {
+                Text(
+                    student.name,
+                    fontSize   = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color      = TextPrimary
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    "Age ${student.age}",
+                    fontSize   = 11.sp,
+                    color      = TextHint,
+                    fontWeight = FontWeight.Medium
                 )
             }
 
-            Spacer(Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(student.name, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Gray900)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Status badge
+            if (student.isRated) {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = RatedGreen.copy(alpha = 0.12f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RatedGreen.copy(alpha = 0.3f))
                 ) {
-                    Text("Age: ${student.age}", fontSize = 11.sp, color = Gray500)
-                    Surface(shape = RoundedCornerShape(6.dp), color = level.bg) {
+                    Row(
+                        modifier          = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.CheckCircle, null, tint = RatedGreen, modifier = Modifier.size(11.dp))
+                        Spacer(Modifier.width(4.dp))
                         Text(
-                            level.label,
-                            fontSize = 10.sp,
+                            "Rated",
+                            fontSize   = 10.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = level.color,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            color      = RatedGreen
                         )
                     }
                 }
-            }
-
-            Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    String.format("%.1f", student.overallScore),
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = level.color
-                )
-                Row {
-                    (1..5).forEach { star ->
-                        Icon(
-                            Icons.Default.Star,
-                            contentDescription = null,
-                            tint = if (star <= student.overallScore.toInt()) level.color else Gray200,
-                            modifier = Modifier.size(14.dp)
+            } else {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = UnratedAmber.copy(alpha = 0.12f),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, UnratedAmber.copy(alpha = 0.35f))
+                ) {
+                    Row(
+                        modifier          = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.HourglassEmpty, null, tint = UnratedAmber, modifier = Modifier.size(11.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            "Pending",
+                            fontSize   = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color      = UnratedAmber
                         )
                     }
                 }
             }
 
             Spacer(Modifier.width(8.dp))
+            Icon(
+                Icons.Default.ChevronRight,
+                null,
+                tint     = TextHint,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
 
-            IconButton(onClick = onRate, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Default.Edit, contentDescription = null, tint = Gray400, modifier = Modifier.size(18.dp))
+// ── Save Button ───────────────────────────────────────────────────────────────
+@Composable
+private fun SaveButton(isSaved: Boolean, allRated: Boolean, onClick: () -> Unit) {
+    val enabled  = allRated && !isSaved
+    val bgBrush  = when {
+        isSaved  -> Brush.horizontalGradient(listOf(RatedGreen, Color(0xFF0CB87A)))
+        enabled  -> Brush.horizontalGradient(listOf(PrimaryBlue, AccentTeal))
+        else     -> Brush.horizontalGradient(listOf(Color(0xFFCBD5E1), Color(0xFFCBD5E1)))
+    }
+    val txtColor = if (!enabled && !isSaved) TextHint else Color.White
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(bgBrush)
+            .clickable(
+                enabled            = enabled,
+                interactionSource  = remember { MutableInteractionSource() },
+                indication         = null,
+                onClick            = onClick
+            )
+            .padding(vertical = 15.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        AnimatedContent(isSaved, label = "saveBtn") { saved ->
+            Row(
+                verticalAlignment   = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    if (saved) Icons.Default.CheckCircle else Icons.Default.CloudUpload,
+                    null,
+                    tint     = txtColor,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    when {
+                        saved      -> "All Ratings Saved ✓"
+                        !allRated  -> "Rate all students to save"
+                        else       -> "Save Ratings"
+                    },
+                    fontSize   = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color      = txtColor
+                )
             }
         }
     }
 }
 
+// ── Rating Dialog ─────────────────────────────────────────────────────────────
 @Composable
-private fun StudentDetailDialog(
-    student: StudentProgress,
-    onDismiss: () -> Unit
+private fun RatingDialog(
+    student       : StudentRatingItem,
+    onDismiss     : () -> Unit,
+    onRatingChange: (String, Int) -> Unit
 ) {
-    val level = getRatingLevelForScore(student.overallScore)
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Student Progress", color = Gray900) },
-        text = {
+        containerColor   = CardBg,
+        shape            = RoundedCornerShape(20.dp),
+        title = {
             Column {
+                // Student header
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier
-                            .size(50.dp)
+                        modifier         = Modifier
+                            .size(42.dp)
                             .clip(CircleShape)
-                            .background(level.bg),
+                            .background(PrimaryLight)
+                            .border(2.dp, PrimaryBlue.copy(alpha = 0.3f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(student.initials, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = level.color)
+                        Text(
+                            student.initials,
+                            fontSize   = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color      = PrimaryBlue
+                        )
                     }
                     Spacer(Modifier.width(12.dp))
                     Column {
-                        Text(student.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Gray900)
-                        Text("Age: ${student.age}", fontSize = 12.sp, color = Gray500)
+                        Text(student.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextPrimary)
+                        Text("Age ${student.age}", fontSize = 12.sp, color = TextSecondary)
                     }
                 }
-
-                Spacer(Modifier.height(16.dp))
-
-                student.categories.forEach { category ->
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Box(
-                                    Modifier
-                                        .size(28.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(category.bg),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(category.icon, contentDescription = null, tint = category.color, modifier = Modifier.size(14.dp))
-                                }
-                                Text(category.name, fontSize = 13.sp, color = Gray700)
-                            }
-                            Text(String.format("%.1f/5.0", category.rating), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = category.color)
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        LinearProgressIndicator(
-                            progress = category.rating / category.maxRating,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = category.color,
-                            trackColor = Gray100
-                        )
-                        Spacer(Modifier.height(12.dp))
-                    }
-                }
+                Spacer(Modifier.height(4.dp))
+                // Thin divider
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(DividerColor)
+                )
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                RatingCategoryRow("Food",                    Icons.Default.Restaurant, student.foodRating)         { onRatingChange("food", it) }
+                Divider(color = DividerColor, thickness = 0.5.dp)
+                RatingCategoryRow("Education",               Icons.Default.MenuBook,   student.educationRating)    { onRatingChange("education", it) }
+                Divider(color = DividerColor, thickness = 0.5.dp)
+                RatingCategoryRow("Activity",                Icons.Default.DirectionsRun, student.activityRating)  { onRatingChange("activity", it) }
+                Divider(color = DividerColor, thickness = 0.5.dp)
+                RatingCategoryRow("Health",                  Icons.Default.FavoriteBorder, student.healthRating)   { onRatingChange("health", it) }
+                Divider(color = DividerColor, thickness = 0.5.dp)
+                RatingCategoryRow("School Readiness",        Icons.Default.School,     student.preparednessRating) { onRatingChange("preparedness", it) }
             }
         },
         confirmButton = {
-            Button(onClick = onDismiss, shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = Purple400)) {
-                Text("Close")
+            val allFilled = student.foodRating > 0 && student.educationRating > 0 &&
+                    student.activityRating > 0 && student.healthRating > 0 && student.preparednessRating > 0
+            Button(
+                onClick  = onDismiss,
+                enabled  = allFilled,
+                shape    = RoundedCornerShape(12.dp),
+                colors   = ButtonDefaults.buttonColors(
+                    containerColor         = PrimaryBlue,
+                    disabledContainerColor = Color(0xFFCBD5E1)
+                ),
+                modifier = Modifier.padding(end = 4.dp, bottom = 4.dp)
+            ) {
+                Icon(Icons.Default.CheckCircle, null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Done", fontWeight = FontWeight.SemiBold)
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.padding(bottom = 4.dp)
+            ) {
+                Text("Cancel", color = TextSecondary)
             }
         }
     )
 }
 
-private fun getRatingLevelForScore(score: Float): RatingLevel {
-    return when {
-        score >= 4.0f -> RatingLevel.EXCELLENT
-        score >= 3.0f -> RatingLevel.GOOD
-        score >= 2.0f -> RatingLevel.AVERAGE
-        else -> RatingLevel.NEEDS_SUPPORT
+// ── Rating Category Row ───────────────────────────────────────────────────────
+@Composable
+private fun RatingCategoryRow(
+    label        : String,
+    icon         : ImageVector,
+    rating       : Int,
+    onRatingChange: (Int) -> Unit
+) {
+    Row(
+        modifier              = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment     = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment   = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier            = Modifier.weight(1f)
+        ) {
+            Box(
+                modifier         = Modifier
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(7.dp))
+                    .background(PrimaryLight),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = PrimaryBlue, modifier = Modifier.size(16.dp))
+            }
+            Text(label, fontSize = 13.sp, color = TextPrimary, fontWeight = FontWeight.Medium)
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+            verticalAlignment     = Alignment.CenterVertically
+        ) {
+            (1..5).forEach { star ->
+                StarButton(
+                    filled  = star <= rating,
+                    onClick = { onRatingChange(if (star == rating) 0 else star) }
+                )
+            }
+        }
     }
+}
+
+// ── Star Button ───────────────────────────────────────────────────────────────
+@Composable
+private fun StarButton(filled: Boolean, onClick: () -> Unit) {
+    val scale by animateFloatAsState(
+        targetValue    = if (filled) 1.2f else 1f,
+        animationSpec  = spring(dampingRatio = androidx.compose.animation.core.Spring.DampingRatioMediumBouncy),
+        label          = "starScale"
+    )
+    Icon(
+        if (filled) Icons.Default.Star else Icons.Default.StarBorder,
+        contentDescription = null,
+        tint      = if (filled) StarGold else StarEmpty,
+        modifier  = Modifier
+            .size(26.dp)
+            .graphicsLayer(scaleX = scale, scaleY = scale)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication        = null,
+                onClick           = onClick
+            )
+    )
 }

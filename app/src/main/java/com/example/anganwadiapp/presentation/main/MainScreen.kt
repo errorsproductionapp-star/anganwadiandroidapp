@@ -33,6 +33,7 @@ import com.example.anganwadiapp.presentation.enrollment.StudentEnrollmentScreen
 import com.example.anganwadiapp.presentation.health.HealthRecordScreen
 import com.example.anganwadiapp.presentation.main.dashboard.DashboardScreen
 import com.example.anganwadiapp.presentation.progress.ProgressRatingScreen
+import com.example.anganwadiapp.presentation.progress.ProgressRatingViewModel
 import com.example.anganwadiapp.presentation.reports.ReportsScreen
 import com.example.anganwadiapp.presentation.settings.SettingsScreen
 import com.example.anganwadiapp.presentation.stock.StockManagementScreen
@@ -197,7 +198,9 @@ fun MainScreen(
                         "diet_management"    -> DietManagementScreen()
                         "stock_management"   -> StockManagementScreen()
                         "health_record"      -> HealthRecordScreen()
-                        "progress_rating"    -> ProgressRatingScreen()
+                        "progress_rating"    -> ProgressRatingScreen(
+                            viewModel = hiltViewModel()
+                        )
                         "weekly_activity"    -> WeeklyActivityPlanScreen(
                             onBack = {
                                 navigationStack = navigationStack.dropLast(1)

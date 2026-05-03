@@ -392,15 +392,12 @@ class FirestoreDataSource @Inject constructor(
             .await()
         return if (doc.exists()) doc.data else null
     }
-// ... (previous code)
 suspend fun verifyParentCredentials(childId: String, dob: String): Map<String, Any>? {
-    // Look up centerId from studentcenterid collection
     val mappingDoc = firestore.collection("studentcenterid").document(childId).get().await()
     if (!mappingDoc.exists()) return null
 
     val centerId = mappingDoc.getString("centerId") ?: return null
 
-    // Fetch child document from the center's collection
     val childDoc = firestore.collection(centerId).document(childId).get().await()
     if (!childDoc.exists()) return null
 
@@ -416,4 +413,39 @@ suspend fun verifyParentCredentials(childId: String, dob: String): Map<String, A
         "dateOfBirth" to storedDob
     )
 }
-} // <--- This should be the LAST brace in the file (closing the class)
+
+    suspend fun saveProgressRating(
+        centerId: String,
+        date: String,
+        studentId: String,
+        ratingData: Map<String, Any>
+    ) {
+        firestore.collection(centerId)
+            .document("progress_rating")
+            .collection(date)
+            .document(studentId)
+            .set(ratingData)
+            .await()
+    }
+
+    suspend fun getProgressRating(centerId: String, date: String, studentId: String): Map<String, Any>? {
+        val doc = firestore.collection(centerId)
+            .document("progress_rating")
+            .collection(date)
+            .document(studentId)
+            .get()
+            .await()
+        return if (doc.exists()) doc.data else null
+    }
+
+    suspend fun getTodaysProgressRatings(centerId: String, date: String): List<Map<String, Any>> {
+        val snapshot = firestore.collection(centerId)
+            .document("progress_rating")
+            .collection(date)
+            .get()
+            .await()
+        return snapshot.documents.mapNotNull { doc ->
+            doc.data?.let { it + mapOf("studentId" to doc.id) }
+        }
+    }
+}

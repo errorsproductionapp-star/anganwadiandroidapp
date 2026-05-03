@@ -230,4 +230,30 @@ class AppRepositoryImpl @Inject constructor(
             Result.Error(e.message ?: "Failed to fetch child details", e)
         }
     }
+
+    override suspend fun saveProgressRating(
+        centerId: String,
+        date: String,
+        studentId: String,
+        ratingData: Map<String, Any>
+    ): Result<Unit> {
+        return try {
+            firestoreDataSource.saveProgressRating(centerId, date, studentId, ratingData)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to save progress rating", e)
+        }
+    }
+
+    override suspend fun getTodaysProgressRatings(
+        centerId: String,
+        date: String
+    ): Result<List<Map<String, Any>>> {
+        return try {
+            val data = firestoreDataSource.getTodaysProgressRatings(centerId, date)
+            Result.Success(data)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to fetch progress ratings", e)
+        }
+    }
 }
