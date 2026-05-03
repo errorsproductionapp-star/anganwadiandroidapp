@@ -69,6 +69,8 @@ fun DashboardScreen(
     onNavigateToStockManagement: () -> Unit,
     onNavigateToHealthRecord: () -> Unit,
     onNavigateToProgressRating: () -> Unit,
+    onNavigateToWeeklyActivity: () -> Unit,
+    onNavigateToReports: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val anganwadiNumber by viewModel.anganwadiCenterId.collectAsState()
@@ -247,14 +249,16 @@ fun DashboardScreen(
                 subtitle = "View and manage weekly activities",
                 icon = Icons.Default.CalendarMonth,
                 tint = Sky600,
-                bgGradient = listOf(Sky50, Sky100)
+                bgGradient = listOf(Sky50, Sky100),
+                onClick = onNavigateToWeeklyActivity
             )
             ManagementCard(
                 title = "Reports & Analytics",
                 subtitle = "Generate and view reports",
                 icon = Icons.Default.Assessment,
                 tint = Gray500,
-                bgGradient = listOf(Gray100, Gray200)
+                bgGradient = listOf(Gray100, Gray200),
+                onClick = onNavigateToReports
             )
         }
 

@@ -185,4 +185,31 @@ class AppRepositoryImpl @Inject constructor(
             Result.Error(e.message ?: "Failed to fetch diet plan", e)
         }
     }
+
+    override suspend fun saveWeeklyActivityPlan(
+        centerId: String,
+        weekRangeId: String,
+        date: String,
+        activities: List<Map<String, Any>>
+    ): Result<Unit> {
+        return try {
+            firestoreDataSource.saveWeeklyActivityPlan(centerId, weekRangeId, date, activities)
+            Result.Success(Unit)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to save weekly activity plan", e)
+        }
+    }
+
+    override suspend fun getWeeklyActivityPlan(
+        centerId: String,
+        weekRangeId: String,
+        date: String
+    ): Result<Map<String, Any>?> {
+        return try {
+            val data = firestoreDataSource.getWeeklyActivityPlan(centerId, weekRangeId, date)
+            Result.Success(data)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to fetch weekly activity plan", e)
+        }
+    }
 }

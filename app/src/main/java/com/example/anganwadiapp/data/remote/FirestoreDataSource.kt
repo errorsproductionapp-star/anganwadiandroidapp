@@ -329,4 +329,39 @@ class FirestoreDataSource @Inject constructor(
             .add(itemData)
             .await()
     }
+
+    // Weekly Activity Plan Methods
+    suspend fun saveWeeklyActivityPlan(
+        anganwadiCenterId: String,
+        weekRangeId: String,
+        date: String,
+        activities: List<Map<String, Any>>
+    ) {
+        firestore.collection(anganwadiCenterId)
+            .document("weeklyactivity")
+            .collection(weekRangeId)
+            .document(date)
+            .set(
+                mapOf(
+                    "date" to date,
+                    "activities" to activities,
+                    "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                )
+            )
+            .await()
+    }
+
+    suspend fun getWeeklyActivityPlan(
+        anganwadiCenterId: String,
+        weekRangeId: String,
+        date: String
+    ): Map<String, Any>? {
+        val doc = firestore.collection(anganwadiCenterId)
+            .document("weeklyactivity")
+            .collection(weekRangeId)
+            .document(date)
+            .get()
+            .await()
+        return if (doc.exists()) doc.data else null
+    }
 }

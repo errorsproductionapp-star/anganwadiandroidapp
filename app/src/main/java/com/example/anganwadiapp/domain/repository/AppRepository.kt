@@ -27,4 +27,15 @@ interface AppRepository {
     suspend fun getTodayAttendance(centerId: String, date: String): Result<Map<String, Any>?>
     suspend fun saveDietPlan(centerId: String, date: String, dietPlan: Map<String, Any>): Result<Unit>
     suspend fun getDietPlan(centerId: String, date: String): Result<Map<String, Any>?>
+    suspend fun saveWeeklyActivityPlan(
+        centerId: String,
+        weekRangeId: String,
+        date: String,
+        activities: List<Map<String, Any>>
+    ): Result<Unit>
+    suspend fun getWeeklyActivityPlan(
+        centerId: String,
+        weekRangeId: String,
+        date: String
+    ): Result<Map<String, Any>?>
 }

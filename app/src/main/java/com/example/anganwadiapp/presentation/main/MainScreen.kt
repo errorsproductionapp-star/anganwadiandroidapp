@@ -25,6 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.anganwadiapp.presentation.activity.WeeklyActivityPlanScreen
+import com.example.anganwadiapp.presentation.activity.WeeklyActivityViewModel
 import com.example.anganwadiapp.presentation.attendance.AttendanceMarkingScreen
 import com.example.anganwadiapp.presentation.diet.DietManagementScreen
 import com.example.anganwadiapp.presentation.enrollment.StudentEnrollmentScreen
@@ -74,6 +76,7 @@ fun MainScreen(
         "stock_management"   -> "Stock Management"
         "health_record"      -> "Health Record"
         "progress_rating"    -> "Progress Rating"
+        "weekly_activity"    -> "Weekly Activity Plan"
         "students"           -> "Students"
         "reports"            -> "Reports"
         "settings"           -> "Settings"
@@ -170,6 +173,14 @@ fun MainScreen(
                             previousScreen = "dashboard_0"
                             navigationStack = navigationStack + "progress_rating"
                         },
+                        onNavigateToWeeklyActivity = {
+                            previousScreen = "dashboard_0"
+                            navigationStack = navigationStack + "weekly_activity"
+                        },
+                        onNavigateToReports = {
+                            previousScreen = "dashboard_0"
+                            navigationStack = listOf("reports")
+                        },
                         viewModel = hiltViewModel()
                     )
                     targetScreen == "dashboard_1" -> StudentsScreen()
@@ -187,6 +198,12 @@ fun MainScreen(
                         "stock_management"   -> StockManagementScreen()
                         "health_record"      -> HealthRecordScreen()
                         "progress_rating"    -> ProgressRatingScreen()
+                        "weekly_activity"    -> WeeklyActivityPlanScreen(
+                            onBack = {
+                                navigationStack = navigationStack.dropLast(1)
+                            },
+                            viewModel = hiltViewModel()
+                        )
                         "students"           -> StudentsScreen()
                         "reports"            -> ReportsScreen()
                         "settings"           -> SettingsScreen(onLogout = onLogout)
