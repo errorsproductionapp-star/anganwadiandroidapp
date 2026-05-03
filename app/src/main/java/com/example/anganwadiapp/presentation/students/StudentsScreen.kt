@@ -367,10 +367,10 @@ private fun StudentCard(
                 Spacer(Modifier.weight(1f))
 
                 Text(
-                    "ID: ${student.id.takeLast(4)}",
-                    fontSize = 10.sp,
-                    color = Gray300,
-                    fontWeight = FontWeight.Medium,
+                    "ID: ${student.id.takeLast(6)}",
+                    fontSize = 8.sp,
+                    color = Gray900,
+                    fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp
                 )
             }
@@ -381,7 +381,7 @@ private fun StudentCard(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete Student") },
-            text = { Text("Are you sure you want to delete ${student.name}? This action cannot be undone.") },
+            text = { Text("Do you sure you want to delete ${student.name}? This action cannot be undone.") },
             confirmButton = {
                 TextButton(onClick = { onDelete(); showDeleteDialog = false }) {
                     Text("Delete", color = Red500, fontWeight = FontWeight.Bold)
