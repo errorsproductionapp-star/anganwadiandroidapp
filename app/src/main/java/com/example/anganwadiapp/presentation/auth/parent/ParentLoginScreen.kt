@@ -27,7 +27,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ParentLoginScreen(
-    onLoginSuccess: (childId: String, centerId: String) -> Unit,
+    onLoginSuccess: (childId: String, centerId: String, childName: String) -> Unit,
     onBack: () -> Unit
 ) {
     val viewModel: ParentViewModel = hiltViewModel()
@@ -42,7 +42,8 @@ fun ParentLoginScreen(
             val data = (loginState as ParentLoginState.Success).data
             val childId = data["childId"] as? String ?: ""
             val centerId = data["centerId"] as? String ?: ""
-            onLoginSuccess(childId, centerId)
+            val childName = data["name"] as? String ?: ""
+            onLoginSuccess(childId, centerId, childName)
         }
     }
 

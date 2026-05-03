@@ -3,6 +3,7 @@ package com.example.anganwadiapp.presentation.auth.parent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.anganwadiapp.core.common.Result
+import com.example.anganwadiapp.core.preferences.PreferencesManager
 import com.example.anganwadiapp.domain.repository.AppRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,7 +13,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ParentViewModel @Inject constructor(
-    private val repository: AppRepository
+    private val repository: AppRepository,
+    val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
     private val _loginState = MutableStateFlow<ParentLoginState>(ParentLoginState.Idle)
