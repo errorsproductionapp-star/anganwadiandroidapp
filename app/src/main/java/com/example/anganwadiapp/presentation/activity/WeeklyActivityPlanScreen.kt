@@ -795,6 +795,7 @@ private fun ActivityFormDialog(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DatePickerDialogModern(

@@ -1,5 +1,7 @@
 package com.example.anganwadiapp.presentation.activity
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.anganwadiapp.core.common.Result
@@ -24,6 +26,7 @@ data class WeeklyActivityUiState(
     val weekDays: List<LocalDate> = emptyList()
 )
 
+@RequiresApi(Build.VERSION_CODES.O)
 @HiltViewModel
 class WeeklyActivityViewModel @Inject constructor(
     private val appRepository: AppRepository
@@ -36,6 +39,7 @@ class WeeklyActivityViewModel @Inject constructor(
         loadCenterAndWeekInfo()
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun loadCenterAndWeekInfo() {
         viewModelScope.launch {
             val uid = FirebaseAuth.getInstance().currentUser?.uid
