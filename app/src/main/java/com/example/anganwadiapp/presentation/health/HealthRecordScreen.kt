@@ -43,7 +43,6 @@ private val Green600 = Color(0xFF16A34A)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HealthRecordScreen(
-    onBack: () -> Unit = {},
     onStudentClick: (Child) -> Unit = {},
     viewModel: HealthViewModel = hiltViewModel()
 ) {

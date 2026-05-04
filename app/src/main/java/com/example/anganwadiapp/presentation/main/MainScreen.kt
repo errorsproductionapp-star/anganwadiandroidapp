@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.BackHandler
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.anganwadiapp.presentation.activity.WeeklyActivityPlanScreen
 import com.example.anganwadiapp.presentation.activity.WeeklyActivityViewModel
@@ -69,7 +70,6 @@ fun MainScreen(
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     var navigationStack by remember { mutableStateOf(listOf<String>()) }
-    var previousScreen by remember { mutableStateOf<String?>(null) }
     val currentScreen = navigationStack.lastOrNull()
 
     val screenTitle = when (currentScreen) {
@@ -102,7 +102,6 @@ fun MainScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = {
-                            previousScreen = currentScreen
                             navigationStack = navigationStack.dropLast(1)
                         }) {
                             Icon(
@@ -133,6 +132,10 @@ fun MainScreen(
             }
         }
     ) { innerPadding ->
+        BackHandler(enabled = navigationStack.isNotEmpty()) {
+            navigationStack = navigationStack.dropLast(1)
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -154,35 +157,27 @@ fun MainScreen(
                 when {
                     targetScreen == "dashboard_0" -> DashboardScreen(
                         onNavigateToStudentEnrollment = {
-                            previousScreen = "dashboard_0"
                             navigationStack = navigationStack + "student_enrollment"
                         },
                         onNavigateToAttendanceMarking = {
-                            previousScreen = "dashboard_0"
                             navigationStack = navigationStack + "attendance_marking"
                         },
                         onNavigateToDietManagement = {
-                            previousScreen = "dashboard_0"
                             navigationStack = navigationStack + "diet_management"
                         },
                         onNavigateToStockManagement = {
-                            previousScreen = "dashboard_0"
                             navigationStack = navigationStack + "stock_management"
                         },
                         onNavigateToHealthRecord = {
-                            previousScreen = "dashboard_0"
                             navigationStack = navigationStack + "health_record"
                         },
                         onNavigateToProgressRating = {
-                            previousScreen = "dashboard_0"
                             navigationStack = navigationStack + "progress_rating"
                         },
                         onNavigateToWeeklyActivity = {
-                            previousScreen = "dashboard_0"
                             navigationStack = navigationStack + "weekly_activity"
                         },
                         onNavigateToReports = {
-                            previousScreen = "dashboard_0"
                             navigationStack = listOf("reports")
                         },
                         viewModel = hiltViewModel()
@@ -193,7 +188,6 @@ fun MainScreen(
                     else -> when (targetScreen) {
                         "student_enrollment" -> StudentEnrollmentScreen(
                             onSuccess = {
-                                previousScreen = "dashboard_0"
                                 navigationStack = navigationStack.dropLast(1)
                             }
                         )
@@ -203,9 +197,6 @@ fun MainScreen(
                         "health_record"      -> {
                             val healthViewModel: HealthViewModel = hiltViewModel()
                             HealthRecordScreen(
-                                onBack = {
-                                    navigationStack = navigationStack.dropLast(1)
-                                },
                                 onStudentClick = { student ->
                                     healthViewModel.selectStudent(student)
                                     navigationStack = navigationStack + "health_measurement_form"
@@ -225,9 +216,6 @@ fun MainScreen(
                             viewModel = hiltViewModel()
                         )
                         "weekly_activity"    -> WeeklyActivityPlanScreen(
-                            onBack = {
-                                navigationStack = navigationStack.dropLast(1)
-                            },
                             viewModel = hiltViewModel()
                         )
                         "students"           -> StudentsScreen()
