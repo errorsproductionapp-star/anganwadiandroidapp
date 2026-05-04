@@ -30,7 +30,9 @@ import com.example.anganwadiapp.presentation.activity.WeeklyActivityViewModel
 import com.example.anganwadiapp.presentation.attendance.AttendanceMarkingScreen
 import com.example.anganwadiapp.presentation.diet.DietManagementScreen
 import com.example.anganwadiapp.presentation.enrollment.StudentEnrollmentScreen
+import com.example.anganwadiapp.presentation.health.HealthMeasurementFormScreen
 import com.example.anganwadiapp.presentation.health.HealthRecordScreen
+import com.example.anganwadiapp.presentation.health.HealthViewModel
 import com.example.anganwadiapp.presentation.main.dashboard.DashboardScreen
 import com.example.anganwadiapp.presentation.progress.ProgressRatingScreen
 import com.example.anganwadiapp.presentation.progress.ProgressRatingViewModel
@@ -76,6 +78,7 @@ fun MainScreen(
         "diet_management"    -> "Diet Management"
         "stock_management"   -> "Stock Management"
         "health_record"      -> "Health Record"
+        "health_measurement_form" -> "Health Measurement"
         "progress_rating"    -> "Progress Rating"
         "weekly_activity"    -> "Weekly Activity Plan"
         "students"           -> "Students"
@@ -197,7 +200,27 @@ fun MainScreen(
                         "attendance_marking" -> AttendanceMarkingScreen()
                         "diet_management"    -> DietManagementScreen()
                         "stock_management"   -> StockManagementScreen()
-                        "health_record"      -> HealthRecordScreen()
+                        "health_record"      -> {
+                            val healthViewModel: HealthViewModel = hiltViewModel()
+                            HealthRecordScreen(
+                                onBack = {
+                                    navigationStack = navigationStack.dropLast(1)
+                                },
+                                onStudentClick = { student ->
+                                    healthViewModel.selectStudent(student)
+                                    navigationStack = navigationStack + "health_measurement_form"
+                                }
+                            )
+                        }
+                        "health_measurement_form" -> {
+                            val healthViewModel: HealthViewModel = hiltViewModel()
+                            HealthMeasurementFormScreen(
+                                onSaveSuccess = {
+                                    navigationStack = navigationStack.dropLast(1)
+                                },
+                                viewModel = healthViewModel
+                            )
+                        }
                         "progress_rating"    -> ProgressRatingScreen(
                             viewModel = hiltViewModel()
                         )
