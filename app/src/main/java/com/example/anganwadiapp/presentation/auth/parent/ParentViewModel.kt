@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 @HiltViewModel
@@ -157,6 +158,36 @@ class ParentViewModel @Inject constructor(
     fun resetRatingState() {
         _ratingState.value = ParentRatingState.Idle
     }
+
+    private val _healthState = MutableStateFlow<ParentHealthState>(ParentHealthState.Idle)
+    val healthState: StateFlow<ParentHealthState> = _healthState
+
+    fun fetchHealthRecord(centerId: String, childId: String, date: String) {
+        _healthState.value = ParentHealthState.Loading
+        viewModelScope.launch {
+            try {
+                val dateDocId = date.replace("/", "-")
+                val doc = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                    .collection(centerId)
+                    .document("health_records")
+                    .collection(childId)
+                    .document(dateDocId)
+                    .get()
+                    .await()
+                if (doc.exists()) {
+                    _healthState.value = ParentHealthState.Loaded(doc.data!!)
+                } else {
+                    _healthState.value = ParentHealthState.NoData
+                }
+            } catch (e: Exception) {
+                _healthState.value = ParentHealthState.Error(e.message ?: "Failed to fetch health record")
+            }
+        }
+    }
+
+    fun resetHealthState() {
+        _healthState.value = ParentHealthState.Idle
+    }
 }
 
 sealed class ParentRatingState {
@@ -194,4 +225,12 @@ sealed class ParentAttendanceState {
     data class Loaded(val status: ChildAttendanceStatus) : ParentAttendanceState()
     data class Error(val message: String) : ParentAttendanceState()
     object NoData : ParentAttendanceState()
+}
+
+sealed class ParentHealthState {
+    object Idle : ParentHealthState()
+    object Loading : ParentHealthState()
+    data class Loaded(val healthRecord: Map<String, Any>) : ParentHealthState()
+    data class Error(val message: String) : ParentHealthState()
+    object NoData : ParentHealthState()
 }

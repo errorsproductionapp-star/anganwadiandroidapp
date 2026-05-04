@@ -206,7 +206,10 @@ class MainActivity : ComponentActivity() {
                             val parts = authScreen.removePrefix("parent_health_").split("_")
                             val childId = parts.getOrNull(0) ?: ""
                             val centerId = parts.getOrNull(1) ?: ""
-                            ParentHealthObservationScreen(onBack = { authScreen = "parent_main_${childId}_$centerId" })
+                            ParentHealthObservationScreen(
+                                onBack = { authScreen = "parent_main_${childId}_$centerId" },
+                                parentViewModel = parentViewModel
+                            )
                         }
                         authScreen?.startsWith("parent_weekly_health") == true -> {
                             val parts = authScreen.removePrefix("parent_weekly_health_").split("_")
