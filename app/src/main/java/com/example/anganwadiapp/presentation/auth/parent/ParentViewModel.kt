@@ -130,6 +130,41 @@ class ParentViewModel @Inject constructor(
     fun resetDietPlanState() {
         _dietPlanState.value = ParentDietPlanState.Idle
     }
+
+    private val _ratingState = MutableStateFlow<ParentRatingState>(ParentRatingState.Idle)
+    val ratingState: StateFlow<ParentRatingState> = _ratingState
+
+    fun fetchProgressRating(centerId: String, date: String, childId: String) {
+        _ratingState.value = ParentRatingState.Loading
+        viewModelScope.launch {
+            val result = repository.getProgressRating(centerId, date, childId)
+            when (result) {
+                is Result.Success -> {
+                    val data = result.data
+                    if (data == null) {
+                        _ratingState.value = ParentRatingState.NoData
+                        return@launch
+                    }
+                    _ratingState.value = ParentRatingState.Loaded(data)
+                }
+                is Result.Error -> {
+                    _ratingState.value = ParentRatingState.Error(result.message ?: "Failed to fetch rating")
+                }
+            }
+        }
+    }
+
+    fun resetRatingState() {
+        _ratingState.value = ParentRatingState.Idle
+    }
+}
+
+sealed class ParentRatingState {
+    object Idle : ParentRatingState()
+    object Loading : ParentRatingState()
+    data class Loaded(val ratingData: Map<String, Any>) : ParentRatingState()
+    data class Error(val message: String) : ParentRatingState()
+    object NoData : ParentRatingState()
 }
 
 sealed class ParentDietPlanState {

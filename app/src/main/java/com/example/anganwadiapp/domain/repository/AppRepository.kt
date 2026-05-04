@@ -51,4 +51,6 @@ interface AppRepository {
     ): Result<Unit>
 
     suspend fun getTodaysProgressRatings(centerId: String, date: String): Result<List<Map<String, Any>>>
+
+    suspend fun getProgressRating(centerId: String, date: String, studentId: String): Result<Map<String, Any>?>
 }

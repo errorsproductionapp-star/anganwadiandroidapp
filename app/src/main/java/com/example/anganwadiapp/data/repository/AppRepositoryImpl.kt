@@ -256,4 +256,17 @@ class AppRepositoryImpl @Inject constructor(
             Result.Error(e.message ?: "Failed to fetch progress ratings", e)
         }
     }
+
+    override suspend fun getProgressRating(
+        centerId: String,
+        date: String,
+        studentId: String
+    ): Result<Map<String, Any>?> {
+        return try {
+            val data = firestoreDataSource.getProgressRating(centerId, date, studentId)
+            Result.Success(data)
+        } catch (e: Exception) {
+            Result.Error(e.message ?: "Failed to fetch progress rating", e)
+        }
+    }
 }

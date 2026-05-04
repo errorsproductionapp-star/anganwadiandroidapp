@@ -72,6 +72,16 @@ class PreferencesManager @Inject constructor(
         val childName = preferences[Keys.PARENT_CHILD_NAME] ?: ""
         return ParentData(childId, centerId, childName)
     }
+
+    suspend fun getParentChildId(): String {
+        val preferences = context.dataStore.data.first()
+        return preferences[Keys.PARENT_CHILD_ID] ?: ""
+    }
+
+    suspend fun getParentCenterId(): String {
+        val preferences = context.dataStore.data.first()
+        return preferences[Keys.PARENT_CENTER_ID] ?: ""
+    }
     suspend fun logout() {
         context.dataStore.edit { preferences ->
             preferences.clear()
