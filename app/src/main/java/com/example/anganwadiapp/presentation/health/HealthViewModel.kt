@@ -21,6 +21,7 @@ import javax.inject.Inject
 data class HealthScreenState(
     val centerId: String = "",
     val students: List<Child> = emptyList(),
+    val studentsWithRecords: Set<String> = emptySet(),
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -86,6 +87,7 @@ class HealthViewModel @Inject constructor(
                             students = numericStudents,
                             isLoading = false
                         )
+                        loadStudentsWithRecords(centerId, numericStudents)
                     }
                     is Result.Error -> {
                         _state.value = _state.value.copy(
@@ -101,13 +103,65 @@ class HealthViewModel @Inject constructor(
         }
     }
 
+    private fun loadStudentsWithRecords(centerId: String, students: List<Child>) {
+        viewModelScope.launch {
+            val studentsWithRecords = mutableSetOf<String>()
+            students.forEach { student ->
+                try {
+                    val snapshot = firestore.collection(centerId)
+                        .document("health_records")
+                        .collection(student.id)
+                        .get()
+                        .await()
+                    if (!snapshot.isEmpty) {
+                        studentsWithRecords.add(student.id)
+                    }
+                } catch (e: Exception) {
+                }
+            }
+            _state.value = _state.value.copy(studentsWithRecords = studentsWithRecords)
+        }
+    }
+
     fun selectStudent(child: Child) {
-        val currentDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
-        _formData.value = HealthFormData(
-            studentId = child.id,
-            studentName = child.name,
-            dateOfMeasurement = currentDate
-        )
+        viewModelScope.launch {
+            val currentDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+            val baseFormData = HealthFormData(
+                studentId = child.id,
+                studentName = child.name,
+                dateOfMeasurement = currentDate
+            )
+
+            val centerId = _state.value.centerId
+            try {
+                val snapshot = firestore.collection(centerId)
+                    .document("health_records")
+                    .collection(child.id)
+                    .get()
+                    .await()
+
+                if (!snapshot.isEmpty) {
+                    val latestDoc = snapshot.documents.sortedByDescending { it.id }.first()
+                    val data = latestDoc.data
+                    if (data != null) {
+                        _formData.value = baseFormData.copy(
+                            height = if ((data["height"] as? Number)?.toFloat() == 0f) "" else (data["height"] as? Number)?.toFloat()?.toString() ?: "",
+                            weight = if ((data["weight"] as? Number)?.toFloat() == 0f) "" else (data["weight"] as? Number)?.toFloat()?.toString() ?: "",
+                            bmiStatus = data["bmiStatus"] as? String ?: "",
+                            vaccinationName = data["vaccinationName"] as? String ?: "",
+                            vaccinationDate = data["vaccinationDate"] as? String ?: "",
+                            nextDueDate = data["nextDueDate"] as? String ?: "",
+                            actionTaken = data["actionTaken"] as? String ?: "",
+                            healthRemarks = data["healthRemarks"] as? String ?: ""
+                        )
+                        return@launch
+                    }
+                }
+            } catch (e: Exception) {
+            }
+
+            _formData.value = baseFormData
+        }
     }
 
     fun updateFormField(update: HealthFormData.() -> HealthFormData) {
@@ -160,11 +214,18 @@ class HealthViewModel @Inject constructor(
                     "timestamp" to com.google.firebase.firestore.FieldValue.serverTimestamp()
                 )
 
+                val dateDocId = data.dateOfMeasurement.replace("/", "-")
+
                 firestore.collection(centerId)
                     .document("health_records")
                     .collection(data.studentId)
-                    .add(healthRecord)
+                    .document(dateDocId)
+                    .set(healthRecord)
                     .await()
+
+                _state.value = _state.value.copy(
+                    studentsWithRecords = _state.value.studentsWithRecords + data.studentId
+                )
 
                 onSuccess()
             } catch (e: Exception) {

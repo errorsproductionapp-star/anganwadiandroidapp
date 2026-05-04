@@ -2,6 +2,7 @@ package com.example.anganwadiapp.presentation.health
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -37,6 +38,7 @@ private val Gray700 = Color(0xFF374151)
 private val Gray900 = Color(0xFF0F172A)
 private val Sky400 = Color(0xFF38BDF8)
 private val Sky600 = Color(0xFF0284C7)
+private val Green600 = Color(0xFF16A34A)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,6 +120,7 @@ fun HealthRecordScreen(
                 items(filteredStudents, key = { it.id }) { student ->
                     StudentHealthCard(
                         student = student,
+                        hasRecord = state.studentsWithRecords.contains(student.id),
                         onClick = { onStudentClick(student) }
                     )
                     Spacer(Modifier.height(8.dp))
@@ -130,6 +133,7 @@ fun HealthRecordScreen(
 @Composable
 private fun StudentHealthCard(
     student: Child,
+    hasRecord: Boolean,
     onClick: () -> Unit
 ) {
     val genderColor = when (student.gender) {
@@ -150,7 +154,8 @@ private fun StudentHealthCard(
             .padding(horizontal = 16.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
-        color = Color.White,
+        color = if (hasRecord) Color(0xFFDCFCE7) else Color.White,
+        border = if (hasRecord) BorderStroke(1.5.dp, Color(0xFF16A34A)) else null,
         shadowElevation = 2.dp
     ) {
         Row(
@@ -208,9 +213,9 @@ private fun StudentHealthCard(
             }
 
             Icon(
-                Icons.Default.ChevronRight,
+                if (hasRecord) Icons.Default.CheckCircle else Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = Gray400,
+                tint = if (hasRecord) Green600 else Gray400,
                 modifier = Modifier.size(20.dp)
             )
         }
