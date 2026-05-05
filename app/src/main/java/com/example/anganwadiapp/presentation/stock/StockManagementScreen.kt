@@ -56,6 +56,7 @@ enum class StockModule {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StockManagementScreen(
+    onViewStocks: () -> Unit,
     viewModel: StockViewModel = hiltViewModel()
 ) {
     var selectedModule by remember { mutableStateOf(StockModule.RECEIVED) }
@@ -76,6 +77,22 @@ fun StockManagementScreen(
                 selectedModule = selectedModule,
                 onModuleSelected = { selectedModule = it }
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = onViewStocks,
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Sky400),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Icon(Icons.Default.List, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("View Stocks", fontWeight = FontWeight.SemiBold)
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 

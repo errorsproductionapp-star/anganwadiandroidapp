@@ -9,6 +9,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class StockItem(
+    val documentId: String = "",
+    val dateReceived: String = "",
+    val itemName: String = "",
+    val quantity: String = "",
+    val source: String = "",
+    val unit: String = ""
+)
+
 @HiltViewModel
 class StockViewModel @Inject constructor(
     private val firestoreDataSource: FirestoreDataSource
@@ -25,6 +34,128 @@ class StockViewModel @Inject constructor(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
+
+    private val _stockDates = MutableStateFlow<List<String>>(emptyList())
+    val stockDates: StateFlow<List<String>> = _stockDates
+
+    private val _stockItems = MutableStateFlow<List<StockItem>>(emptyList())
+    val stockItems: StateFlow<List<StockItem>> = _stockItems
+
+    private val _isStocksLoading = MutableStateFlow(false)
+    val isStocksLoading: StateFlow<Boolean> = _isStocksLoading
+
+    fun loadStockDates() {
+        viewModelScope.launch {
+            _isStocksLoading.value = true
+            _errorMessage.value = null
+
+            try {
+                val uid = firestoreDataSource.getCurrentUid()
+                    ?: throw IllegalStateException("User not authenticated")
+
+                val anganwadiCenterId = firestoreDataSource.getAnganwadiCenterId(uid)
+                    ?: throw IllegalStateException("Anganwadi center ID not found")
+
+                android.util.Log.d("StockViewModel", "Loading dates for center: $anganwadiCenterId")
+
+                val dates = firestoreDataSource.getStockItemDates(
+                    anganwadiCenterId = anganwadiCenterId,
+                    stockType = "item_received"
+                )
+
+                android.util.Log.d("StockViewModel", "Found dates: $dates")
+                _stockDates.value = dates
+            } catch (e: Exception) {
+                android.util.Log.e("StockViewModel", "Error loading dates: ${e.message}", e)
+                _errorMessage.value = e.message
+            } finally {
+                _isStocksLoading.value = false
+            }
+        }
+    }
+
+    fun loadStockItemsForDate(date: String) {
+        viewModelScope.launch {
+            _isStocksLoading.value = true
+            _errorMessage.value = null
+
+            try {
+                val uid = firestoreDataSource.getCurrentUid()
+                    ?: throw IllegalStateException("User not authenticated")
+
+                val anganwadiCenterId = firestoreDataSource.getAnganwadiCenterId(uid)
+                    ?: throw IllegalStateException("Anganwadi center ID not found")
+
+                android.util.Log.d("StockViewModel", "Loading items for date: $date, center: $anganwadiCenterId")
+
+                val items = firestoreDataSource.getStockItemsForDate(
+                    anganwadiCenterId = anganwadiCenterId,
+                    stockType = "item_received",
+                    date = date
+                )
+
+                android.util.Log.d("StockViewModel", "Found ${items.size} items for date $date")
+
+                _stockItems.value = items.map { data ->
+                    StockItem(
+                        documentId = data["documentId"] as? String ?: "",
+                        dateReceived = data["dateReceived"] as? String ?: "",
+                        itemName = data["itemName"] as? String ?: "",
+                        quantity = data["quantity"] as? String ?: "",
+                        source = data["source"] as? String ?: "",
+                        unit = data["unit"] as? String ?: ""
+                    )
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("StockViewModel", "Error loading items: ${e.message}", e)
+                _errorMessage.value = e.message
+            } finally {
+                _isStocksLoading.value = false
+            }
+        }
+    }
+
+    fun updateStockItem(
+        item: StockItem,
+        onDone: () -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+                val uid = firestoreDataSource.getCurrentUid()
+                    ?: throw IllegalStateException("User not authenticated")
+
+                val anganwadiCenterId = firestoreDataSource.getAnganwadiCenterId(uid)
+                    ?: throw IllegalStateException("Anganwadi center ID not found")
+
+                val data = mapOf(
+                    "itemName" to item.itemName,
+                    "dateReceived" to item.dateReceived,
+                    "quantity" to item.quantity,
+                    "unit" to item.unit,
+                    "source" to item.source
+                )
+
+                firestoreDataSource.updateStockItem(
+                    anganwadiCenterId = anganwadiCenterId,
+                    stockType = "item_received",
+                    date = item.dateReceived,
+                    documentId = item.documentId,
+                    itemData = data
+                )
+
+                _saveSuccess.value = true
+                loadStockItemsForDate(item.dateReceived)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+            } finally {
+                _isLoading.value = false
+                onDone()
+            }
+        }
+    }
 
     fun saveReceivedItem(
         itemName: String,

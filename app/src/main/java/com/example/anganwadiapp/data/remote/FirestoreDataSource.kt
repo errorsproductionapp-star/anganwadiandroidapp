@@ -358,6 +358,99 @@ class FirestoreDataSource @Inject constructor(
             .await()
     }
 
+    suspend fun getStockItemDates(
+        anganwadiCenterId: String,
+        stockType: String
+    ): List<String> {
+        android.util.Log.d("FirestoreDataSource", "Getting stock dates from: $anganwadiCenterId/stocks/$stockType")
+
+        val itemsSnapshot = firestore.collection(anganwadiCenterId)
+            .document("stocks")
+            .collection(stockType)
+            .get()
+            .await()
+
+        val dates = mutableListOf<String>()
+        for (dateDoc in itemsSnapshot.documents) {
+            dates.add(dateDoc.id)
+        }
+
+        android.util.Log.d("FirestoreDataSource", "Found dates via direct query: $dates")
+
+        if (dates.isEmpty()) {
+            android.util.Log.d("FirestoreDataSource", "Trying collection group query for 'items'")
+            val allItemsSnapshot = firestore.collectionGroup("items").get().await()
+            android.util.Log.d("FirestoreDataSource", "Collection group found ${allItemsSnapshot.documents.size} total item docs")
+
+            val uniqueDates = mutableSetOf<String>()
+            for (itemDoc in allItemsSnapshot.documents) {
+                val refPath = itemDoc.reference.path
+                android.util.Log.d("FirestoreDataSource", "Item path: $refPath")
+
+                val expectedPrefix = "$anganwadiCenterId/stocks/$stockType/"
+                if (refPath.startsWith(expectedPrefix)) {
+                    val afterPrefix = refPath.substring(expectedPrefix.length)
+                    val date = afterPrefix.split("/")[0]
+                    uniqueDates.add(date)
+                    android.util.Log.d("FirestoreDataSource", "Matched date: $date")
+                }
+            }
+
+            dates.addAll(uniqueDates)
+            android.util.Log.d("FirestoreDataSource", "Dates from collection group: $dates")
+        }
+
+        return dates
+    }
+
+    suspend fun getStockItemsForDate(
+        anganwadiCenterId: String,
+        stockType: String,
+        date: String
+    ): List<Map<String, Any>> {
+        android.util.Log.d("FirestoreDataSource", "Getting items for date: $anganwadiCenterId/stocks/$stockType/$date/items")
+
+        val itemsSnapshot = firestore.collection(anganwadiCenterId)
+            .document("stocks")
+            .collection(stockType)
+            .document(date)
+            .collection("items")
+            .get()
+            .await()
+
+        android.util.Log.d("FirestoreDataSource", "Found ${itemsSnapshot.documents.size} items for date $date")
+
+        val allItems = mutableListOf<Map<String, Any>>()
+        for (itemDoc in itemsSnapshot.documents) {
+            val itemData = itemDoc.data?.toMutableMap() ?: mutableMapOf()
+            itemData["dateReceived"] = date
+            itemData["documentId"] = itemDoc.id
+            allItems.add(itemData)
+        }
+
+        android.util.Log.d("FirestoreDataSource", "Items for $date: $allItems")
+        return allItems
+    }
+
+    suspend fun updateStockItem(
+        anganwadiCenterId: String,
+        stockType: String,
+        date: String,
+        documentId: String,
+        itemData: Map<String, Any>
+    ) {
+        android.util.Log.d("FirestoreDataSource", "Updating stock item: $anganwadiCenterId/stocks/$stockType/$date/items/$documentId")
+        
+        firestore.collection(anganwadiCenterId)
+            .document("stocks")
+            .collection(stockType)
+            .document(date)
+            .collection("items")
+            .document(documentId)
+            .update(itemData)
+            .await()
+    }
+
     // Weekly Activity Plan Methods
     suspend fun saveWeeklyActivityPlan(
         anganwadiCenterId: String,

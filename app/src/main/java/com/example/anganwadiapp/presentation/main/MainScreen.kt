@@ -40,6 +40,7 @@ import com.example.anganwadiapp.presentation.progress.ProgressRatingViewModel
 import com.example.anganwadiapp.presentation.reports.ReportsScreen
 import com.example.anganwadiapp.presentation.settings.SettingsScreen
 import com.example.anganwadiapp.presentation.stock.StockManagementScreen
+import com.example.anganwadiapp.presentation.stock.StockUpdatesScreen
 import com.example.anganwadiapp.presentation.students.StudentsScreen
 import com.example.anganwadiapp.presentation.theme.SkyBlue40
 
@@ -77,6 +78,7 @@ fun MainScreen(
         "attendance_marking" -> "Attendance Marking"
         "diet_management"    -> "Diet Management"
         "stock_management"   -> "Stock Management"
+        "stock_updates"      -> "Stock Updates"
         "health_record"      -> "Health Record"
         "health_measurement_form" -> "Health Measurement"
         "progress_rating"    -> "Progress Rating"
@@ -193,7 +195,12 @@ fun MainScreen(
                         )
                         "attendance_marking" -> AttendanceMarkingScreen()
                         "diet_management"    -> DietManagementScreen()
-                        "stock_management"   -> StockManagementScreen()
+                        "stock_management"   -> StockManagementScreen(
+                            onViewStocks = {
+                                navigationStack = navigationStack + "stock_updates"
+                            }
+                        )
+                        "stock_updates"      -> StockUpdatesScreen()
                         "health_record"      -> {
                             val healthViewModel: HealthViewModel = hiltViewModel()
                             HealthRecordScreen(
